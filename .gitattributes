@@ -31,3 +31,12 @@ LICENSE                         text eol=lf
 *.dll   binary
 *.exe   binary
 *.wav   binary
+
+# ---- GitHub language stats -------------------------------------------------
+# The bundled Rainmeter suites are third-party and are not this repo's code.
+# Without this, linguist reads their .inc/.lua files as Pascal/AutoIt/Pawn and
+# reports the repo as 40% Pascal.
+config/rainmeter/skins/**   linguist-vendored
+config/flowlauncher/**      linguist-generated
+config/windhawk/*.json      linguist-generated
+docs/assets/*.svg           linguist-documentation
