@@ -1,0 +1,33 @@
+# Default: git does NOT touch line endings or try to normalise anything.
+#
+# This repo carries 185 UTF-16 Rainmeter files (.inc, .ini, .lua, .xml, .txt).
+# Git's text handling would rewrite their line endings and corrupt them, because
+# UTF-16 stores CR and LF as two-byte units. So conversion is off globally and
+# turned back on only for the ASCII scripts that genuinely need it.
+* -text
+
+# My own scripts. Windows PowerShell 5.1 mis-parses .ps1 files that arrive with
+# LF-only endings, so these are pinned to CRLF explicitly.
+install.ps1                     text eol=crlf
+setup-wizard.ps1                text eol=crlf
+lib/*.ps1                       text eol=crlf
+config/autostart/*.ps1          text eol=crlf
+config/autostart/*.vbs          text eol=crlf
+
+# Docs that are plain UTF-8 and safe to normalise.
+*.md                            text eol=lf
+.gitignore                      text eol=lf
+.gitattributes                  text eol=lf
+LICENSE                         text eol=lf
+
+# Binary assets - never diffed, never converted.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.ttf   binary
+*.otf   binary
+*.dll   binary
+*.exe   binary
+*.wav   binary

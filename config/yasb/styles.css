@@ -1,0 +1,413 @@
+:root {
+    /* Off-White x Space Grey x NASA Orange */
+    --base: #1c1c1e;               /* bar background */
+    --surface: #242426;            /* widget pill backgrounds */
+    --surface-hover: #2e2e30;      /* hover state */
+    --text: #f0ede8;               /* off-white primary text */
+    --subtext: #8e8c88;            /* muted labels */
+    --orange: #FC3D21;             /* NASA orange - active, critical */
+    --green: #7A9E7A;              /* sage green - healthy */
+    --amber: #D4A04A;              /* warm amber - warning */
+    --border: #2a2a2c;             /* subtle borders */
+    --mantle: rgba(20, 20, 22, 1); /* dropdown/menu background */
+}
+
+* {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+    font-family: "JetBrainsMono NF";
+    letter-spacing: 0.5px;
+    margin: 0;
+    padding: 0;
+}
+
+.yasb-bar {
+    padding: 0 15px;
+    margin: 0;
+    background-color: var(--base);
+    border-bottom: 1px solid var(--border);
+}
+.widget {
+    padding: 0 6px;
+    margin: 0;
+}
+.icon {
+    font-size: 13px;
+}
+.widget .label {
+    padding: 0px 6px 0 3px;
+}
+
+/* ===================== HOME ===================== */
+
+.home-widget {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+    padding: 0 12px;
+    margin: 0 8px 0 0;
+}
+.home-widget .icon {
+    color: var(--subtext);
+    padding: 0 5px 0 0;
+    font-size: 14px;
+}
+.home-widget .icon:hover {
+    color: var(--text);
+}
+.home-menu {
+    background-color: var(--mantle);
+}
+.home-menu .menu-item {
+    padding: 10px 48px 10px 16px;
+    font-size: 13px;
+    font-family: "JetBrainsMono NF", monospace;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+.home-menu .menu-item:hover {
+    background-color: var(--surface);
+    color: var(--text);
+}
+.home-menu .separator {
+    max-height: 1px;
+    background-color: var(--border);
+}
+
+/* ===================== KOMOREBI WORKSPACES ===================== */
+
+.komorebi-workspaces {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+    padding: 0 4px;
+}
+.komorebi-workspaces .ws-btn {
+    border: none;
+    background-color: transparent;
+    margin: 0;
+    font-size: 12px;
+    color: var(--subtext);
+    height: 28px;
+    width: 18px;
+}
+.komorebi-workspaces .ws-btn:hover {
+    color: var(--text);
+}
+/* Populated workspace: subtle dot */
+.komorebi-workspaces .ws-btn.populated {
+    color: transparent;
+    width: 10px;
+    height: 10px;
+    background-color: var(--subtext);
+    border-radius: 5px;
+    margin: 0 4px;
+    font-size: 1px;
+}
+/* NASA Orange active workspace: elongated pill */
+.komorebi-workspaces .ws-btn.active {
+    color: transparent;
+    background-color: var(--orange);
+    width: 24px;
+    height: 10px;
+    margin: 0 4px;
+    border-radius: 5px;
+}
+.komorebi-workspaces .offline-status {
+    color: var(--subtext);
+    font-size: 12px;
+    padding: 0 0 0 4px;
+}
+
+/* ===================== APPLICATIONS ===================== */
+
+.apps-widget {
+    padding: 0 4px;
+    margin: 0 6px;
+}
+.apps-widget .label {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    padding: 0 8px;
+    font-size: 20px;
+    color: var(--orange);
+}
+.apps-widget .label:hover {
+    color: var(--text);
+}
+
+/* ===================== SHORTCUTS CHEATSHEET ===================== */
+
+.shortcuts-widget {
+    padding: 0 2px;
+    margin: 0 2px;
+}
+.shortcuts-widget .icon {
+    font-size: 15px;
+    color: var(--subtext);
+    padding: 0 4px;
+}
+.shortcuts-widget .icon:hover {
+    color: var(--text);
+}
+
+/* ===================== MEDIA ===================== */
+
+.media-widget {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+    margin: 0 0 0 8px;
+}
+.media-widget .label {
+    color: var(--subtext);
+}
+.media-widget .btn.play,
+.media-widget .btn.prev,
+.media-widget .btn.next {
+    font-size: 18px;
+    color: var(--subtext);
+    padding: 0 4px;
+}
+.media-widget .btn.play:hover,
+.media-widget .btn.prev:hover,
+.media-widget .btn.next:hover {
+    color: var(--text);
+}
+
+.media-menu {
+    min-width: 420px;
+    max-width: 420px;
+    background-color: var(--mantle);
+    border-radius: 8px;
+}
+.media-menu .title,
+.media-menu .artist,
+.media-menu .source {
+    font-size: 13px;
+    font-weight: 500;
+    margin-left: 10px;
+    font-family: "JetBrainsMono NF", monospace;
+    letter-spacing: 0.5px;
+}
+.media-menu .artist {
+    font-size: 12px;
+    color: var(--subtext);
+    margin-top: 0px;
+    margin-bottom: 5px;
+}
+.media-menu .source {
+    color: var(--base);
+}
+.media-menu .btn {
+    font-family: "JetBrainsMono NF", 'Segoe Fluent Icons';
+    font-size: 18px;
+    font-weight: 400;
+    margin: 10px 2px 0px 2px;
+    min-width: 40px;
+    max-width: 40px;
+    min-height: 40px;
+    max-height: 40px;
+    border-radius: 20px;
+    color: var(--subtext);
+}
+.media-menu .btn.prev {
+    margin-left: 10px;
+}
+.media-menu .btn:hover {
+    color: var(--text);
+}
+.media-menu .btn.play {
+    font-size: 24px;
+}
+.media-menu .btn.disabled:hover,
+.media-menu .btn.disabled {
+    color: var(--border);
+    background-color: rgba(0, 0, 0, 0);
+}
+.media-menu .playback-time {
+    font-size: 12px;
+    font-family: "JetBrainsMono NF", monospace;
+    color: var(--subtext);
+    margin-top: 20px;
+    min-width: 100px;
+}
+.media-menu .progress-slider {
+    height: 10px;
+    margin: 5px 4px;
+    border-radius: 3px;
+}
+.media-menu .progress-slider::groove {
+    background: transparent;
+    height: 2px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.06);
+}
+.media-menu .progress-slider::groove:hover {
+    background: transparent;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.12);
+}
+.media-menu .progress-slider::sub-page {
+    background: var(--subtext);
+    border-radius: 3px;
+    height: 4px;
+}
+
+/* ===================== DYNAMIC ISLAND ===================== */
+
+.island-widget {
+    background-color: var(--surface);
+    border: 1px solid #2a2a2c;
+    border-radius: 18px;
+    height: 30px;
+    padding: 0 16px;
+    margin: 0 8px;
+}
+.island-widget:hover {
+    background-color: var(--surface-hover);
+    border-color: #3a3a3c;
+}
+.island-widget .label {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    padding: 0;
+}
+.island-widget .icon {
+    color: var(--orange);
+    font-size: 14px;
+    padding: 0 8px 0 0;
+}
+
+/* ===================== WIFI ===================== */
+
+.wifi-widget .widget-container {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+}
+.wifi-widget .widget-container .icon {
+    font-size: 14px;
+    color: var(--subtext);
+    padding: 0 4px 0 10px;
+}
+.wifi-widget .widget-container .label {
+    padding: 0 10px 0 0;
+}
+
+/* ===================== VOLUME ===================== */
+
+.volume-widget {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+    padding: 0 5px;
+}
+.volume-widget .label {
+    padding: 0 5px 0 0;
+}
+.volume-widget .icon {
+    font-size: 15px;
+    color: var(--subtext);
+    padding: 0 0 0 5px;
+}
+.audio-menu {
+    background-color: var(--mantle);
+}
+
+/* ===================== BATTERY ===================== */
+
+.battery-widget .widget-container {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+}
+/* NASA Orange low battery */
+.battery-widget .widget-container .icon.status-low {
+    color: var(--orange);
+    padding: 0 4px 0 10px;
+}
+.battery-widget .widget-container .icon.status-medium {
+    color: var(--amber);
+    padding: 0 4px 0 10px;
+}
+.battery-widget .widget-container .icon.status-high,
+.battery-widget .widget-container .icon.status-full {
+    color: var(--green);
+    padding: 0 4px 0 10px;
+}
+.battery-widget .widget-container .icon.status-charging {
+    color: var(--green);
+    padding: 0 0 0 10px;
+}
+
+/* ===================== POWER MENU ===================== */
+
+.power-menu-widget {
+    background-color: var(--surface);
+    border-radius: 15px;
+    height: 32px;
+}
+/* NASA Orange power icon */
+.power-menu-widget .label {
+    color: var(--orange);
+    font-size: 14px;
+    padding: 0 5px 0 0;
+}
+.power-menu-popup {
+    background-color: transparent;
+}
+.power-menu-popup .button {
+    padding: 0;
+    width: 180px;
+    height: 230px;
+    border-radius: 8px;
+    background-color: var(--base);
+    color: var(--text);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    margin: 0px;
+}
+.power-menu-popup .button.hover {
+    background-color: var(--surface);
+    border-left: 4px solid var(--surface);
+    border-right: 4px solid var(--surface);
+    border-top: 8px solid var(--surface);
+    border-bottom: 8px solid var(--surface);
+}
+.power-menu-popup .button .label {
+    margin-bottom: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--subtext);
+}
+.power-menu-popup .button .icon {
+    font-size: 64px;
+    padding-top: 32px;
+    color: var(--subtext);
+}
+.power-menu-popup .button.cancel .icon {
+    padding: 0;
+    margin: 0;
+}
+.power-menu-popup .button.cancel .label {
+    color: var(--orange);
+    margin: 0;
+}
+.power-menu-popup .button.cancel {
+    height: 32px;
+    border-radius: 4px;
+}
+.uptime {
+    font-size: 13px;
+    margin-bottom: 10px;
+    color: var(--subtext);
+}

@@ -1,0 +1,247 @@
+0 - Thunderstorms
+ (_(_))
+  /Z/
+  z
+
+1 - Windy Rain
+ (_(_))
+  ///
+  / <-
+
+2 - Windy Rain
+ (_(_))
+  ///
+  / <-
+
+3 - Thunderstorms
+ (_(_))
+  /Z/
+  z
+
+4 - Thunderstorms
+ (_(_))
+  /Z/
+  z  
+
+5 - Rain Snow
+ (_(_))
+  |.|.
+   |.  
+
+6 - Rain Sleet
+ (_(_))
+  |,|,
+   |,
+
+7 - Snow/Rain
+ (_(_))
+  |.|.
+   |.  
+   
+8 - Freezing Drizzle
+ (_(_))
+  ' ,'
+   '
+
+9 - Drizzle
+ (_(_))
+  ' '
+   '
+
+10 - Freezing Rain
+ (_(_))
+  | ,|
+   |
+
+11 - Showers
+ (_(_))
+  |  |
+   |
+  
+12 - Heavy Rain
+ (_(_))
+  | ||
+   ||
+
+13 - Snow Flurries
+ (_(_))
+   . .
+  . <-
+
+14 - Light Snow
+ (_(_))
+  . .
+   .
+
+15 - Snowflakes
+ (_(_))
+  .  .
+    .
+
+16 - Heavy Snow
+ (_(_))
+  . ..
+   ..
+
+
+17 - Thunderstorms
+ (_(_))
+  |Z |
+   z
+
+18 - Hail
+ (_(_))
+  ' .'
+   .
+
+19 - Dust
+  \ | /
+ -- O .~
+  .~ .~
+	
+20 - Fog
+  ~ ~ ~
+ ~ ~ ~ ~
+  ~ ~ ~
+
+21 - Haze
+  . *  .
+ ~ ~ ~ ~
+  ~ ~ ~
+
+22 - Smoke
+  \ | /
+ -- O~ ~
+  ~ ~ ~
+
+23 - Windy
+ <-  <-
+   <- -
+
+   
+24 - Windy
+ <-  <-
+   <- -
+
+   
+25 - Frigid
+ (_(_))
+   ?
+
+
+26 - Cloudy
+ (_(_))
+ 
+ 
+
+27 - Mostly Cloudy Night
+ .  *
+ (_(_))
+ 
+
+28 - Mostly Cloudy
+  \ | /
+ -(_(_))
+
+ 
+29 - Partly Cloudy Night
+  . *  . 
+    .
+  (_(_))
+  
+
+30 - Partly Cloudy
+  \ | /
+ -- O --
+  (_(_))
+
+31 - Clear Night
+  . *  . 
+    .
+	  
+
+32 - Sunny
+  \ | /
+ -- O --
+  / | \
+
+33 - Mostly Clear Night
+  . *  . 
+    .
+  (_(_))
+
+34 - Mostly Sunny
+  \ | /
+ -- O --
+  (_(_))
+
+35 - Thunderstorms
+ (_(_))
+  |Z |
+   z
+
+36 - Hot
+  \ | /
+ -- @ --
+  / | \
+
+37 - Isolated Thunder
+ \ | /
+ (_(_))
+  ' Z'
+
+38 - Scattered Thunderstorms
+ \ | /
+ (_(_))
+  ' Z'
+
+39 - Scattered Rain
+ \ | /
+ (_(_))
+  '' '
+
+40 - Heavy Rain
+ (_(_))
+  | ||
+   |
+
+41 - Scattered Snow
+ \ | /
+ (_(_))
+  .. .
+
+42 - Heavy Snow
+ (_(_))
+  . ..
+   ..
+
+43 - Windy/Snowy
+ (_(_))
+  . ..
+  ..<-
+
+44 - Partly Cloudy Day
+  \ | /
+ -- O --
+  (_(_))
+
+45 - Scattered Showers Night
+ .  * .
+ (_(_))
+  '| ' 
+
+46 - Snowy Night
+ .  * .
+ (_(_))
+  .. . 
+
+47 - Scattered Thunderstorms Night
+ .  * .
+ (_(_))
+  'Z ' 
+
+na - Not Available
+ (_(_))
+   ?
+ 
+ 

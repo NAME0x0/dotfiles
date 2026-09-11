@@ -1,0 +1,238 @@
+watch_stylesheet: true
+watch_config: true
+debug: true
+komorebi:
+  start_command: "komorebic start --whkd"
+  stop_command: "komorebic stop --whkd"
+  reload_command: "komorebic stop --whkd && komorebic start --whkd"
+
+bars:
+  primary-bar:
+    enabled: true
+    screens: ["*"]
+    class_name: "yasb-bar"
+    alignment:
+      position: "top"
+      center: false
+    blur_effect:
+      enabled: true
+      acrylic: false
+      dark_mode: true
+      round_corners: false
+      border_color: None
+    window_flags:
+      always_on_top: false
+      windows_app_bar: true
+    dimensions:
+      width: "100%"
+      height: 40
+    padding:
+      top: 0
+      left: 0
+      bottom: 0
+      right: 0
+    widgets:
+      left: [
+        "home",
+        "komorebi_workspaces",
+        "apps",
+        "shortcuts",
+        "media"
+      ]
+      center: [
+        "island_app",
+      ]
+      right: [
+        "wifi",
+        "volume",
+        "battery",
+        "power_menu"
+      ]
+widgets:
+  home:
+    type: "yasb.home.HomeWidget"
+    options:
+      label: "<span>\ue62a</span>"
+      menu_list:
+      - { title: "User Home", path: "~" }
+      - { title: "Download", path: "__USERPROFILE__\\Downloads" }
+      - { title: "Documents", path: "__USERPROFILE__\\Documents" }
+      - { title: "Pictures", path: "__USERPROFILE__\\Pictures" }
+      system_menu: true
+      power_menu: true
+      blur: true
+      round_corners: true
+      round_corners_type: "normal"
+      border_color: "#2a2a2c"
+      distance: 6
+      container_padding:
+        top: 0
+        left: 0
+        bottom: 0
+        right: 0
+      alignment: "left"
+      direction: "down"
+      menu_labels:
+        shutdown: "Shutdown"
+        restart: "Restart"
+        logout: "Logout"
+        lock: "Lock"
+        sleep: "Sleep"
+        system: "System Settings"
+        about: "About This PC"
+        task_manager: "Task Manager"
+  komorebi_workspaces:
+    type: "komorebi.workspaces.WorkspaceWidget"
+    options:
+      label_offline: "\u23fc Offline"
+      label_workspace_btn: "\udb81\udc3d"
+      label_workspace_active_btn: ""
+      label_workspace_populated_btn: "\udb81\udc3e"
+      label_default_name: "{index}"
+      label_zero_index: false
+      hide_empty_workspaces: false
+      hide_if_offline: true
+      animation: true
+  apps:
+    type: "yasb.applications.ApplicationsWidget"
+    options:
+      label: ""
+      image_icon_size: 20
+      tooltip: true
+      app_list:
+        - { icon: "\ue795", launch: "wt", name: "Terminal" }
+        - { icon: "\ue62b", launch: "wt nvim", name: "Neovim" }
+        - { icon: "\udb82\ude1e", launch: "code", name: "VS Code" }
+      container_padding:
+        top: 0
+        left: 0
+        bottom: 0
+        right: 0
+  shortcuts:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "<span>\uf11c</span>"
+      label_alt: "<span>\uf11c</span>"
+      class_name: "shortcuts-widget"
+      tooltip: true
+      tooltip_label: "Keybinding Cheatsheet"
+      callbacks:
+        on_left: "exec powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File \"__USERPROFILE__\\.config\\yasb\\shortcuts_popup.ps1\""
+        on_middle: "do_nothing"
+        on_right: "do_nothing"
+  media:
+    type: "yasb.media.MediaWidget"
+    options:
+      label: "<span>\udb80\udf87</span> \"NOW PLAYING\" {title}"
+      label_alt: "<span>\udb80\udf87</span> \"NOW PLAYING\" {title} - {artist}"
+      hide_empty: true
+      callbacks:
+        on_left: "toggle_media_menu"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+      max_field_size:
+        label: 40
+        label_alt: 60
+      show_thumbnail: false
+      controls_only: false
+      controls_left: false
+      thumbnail_alpha: 80
+      thumbnail_padding: 8
+      thumbnail_corner_radius: 16
+      icons:
+        prev_track: "\udb81\udcae"
+        next_track: "\udb81\udcad"
+        play: "\udb81\udc0a"
+        pause: "\udb80\udfe4"
+      media_menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 10
+        thumbnail_corner_radius: 8
+        thumbnail_size: 120
+        max_title_size: 80
+        max_artist_size: 20
+        show_source: true
+      media_menu_icons:
+        play: "\ue768"
+        pause: "\ue769"
+        prev_track: "\ue892"
+        next_track: "\ue893"
+      label_shadow:
+        enabled: true
+        color: "black"
+        radius: 3
+        offset: [ 1, 1 ]
+  island_app:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "{data}"
+      label_alt: "{data}"
+      class_name: "island-widget"
+      exec_options:
+        run_cmd: "powershell -NoProfile -ExecutionPolicy Bypass -File __USERPROFILE__\\.config\\yasb\\island_app.ps1"
+        run_interval: 5000
+        return_format: "string"
+        hide_empty: false
+      callbacks:
+        on_left: "exec powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File __USERPROFILE__\\.config\\yasb\\island_popup.ps1"
+        on_middle: "do_nothing"
+        on_right: "do_nothing"
+  battery:
+    type: "yasb.battery.BatteryWidget"
+    options:
+      label: "<span>{icon}</span> \"BAT\" {percent}%"
+      label_alt: "\"BAT\" {time_remaining}"
+      charging_options:
+        icon_format: "{charging_icon}"
+  wifi:
+    type: "yasb.wifi.WifiWidget"
+    options:
+      label: "<span>{wifi_icon}</span> \"WIFI\" {wifi_name}"
+      label_alt: "\"WIFI\" {wifi_name} {wifi_strength}%"
+      update_interval: 5000
+      callbacks:
+        on_left: "exec explorer ms-availablenetworks:"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+      wifi_icons: [
+        "\udb82\udd2e",
+        "\udb82\udd1f",
+        "\udb82\udd22",
+        "\udb82\udd25",
+        "\udb82\udd28"
+      ]
+  volume:
+    type: "yasb.volume.VolumeWidget"
+    options:
+      label: "<span>{icon}</span> \"VOL\" {level}"
+      label_alt: "\"VOL\" {volume}"
+      volume_icons:
+        - "\udb81\udf5f "
+        - "\uf026 "
+        - "\uf026 "
+        - "\uf027 "
+        - "\uf028 "
+      callbacks:
+        on_right: "exec cmd.exe /c start ms-settings:sound"
+  power_menu:
+    type: "yasb.power_menu.PowerMenuWidget"
+    options:
+      label: "\uf011"
+      uptime: True
+      blur: False
+      blur_background: True
+      animation_duration: 200
+      button_row: 5
+      buttons:
+        shutdown: ["\uf011", "Shut Down"]
+        restart: ["\uead2", "Restart"]
+        signout: ["\udb80\udf43", "Sign out"]
+        hibernate: ["\uf28e", "Hibernate"]
+        sleep: ["\u23fe", "Sleep"]
+        cancel: ["", "Cancel"]

@@ -1,0 +1,186 @@
+{
+    "$help": "https://aka.ms/terminal-documentation",
+    "$schema": "https://aka.ms/terminal-profiles-schema",
+    "actions": [],
+    "copyFormatting": "none",
+    "copyOnSelect": true,
+    "defaultProfile": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+    "keybindings": 
+    [
+        {
+            "id": "Terminal.CopyToClipboard",
+            "keys": "ctrl+c"
+        },
+        {
+            "id": "Terminal.PasteFromClipboard",
+            "keys": "ctrl+v"
+        },
+        {
+            "id": "Terminal.FindText",
+            "keys": "ctrl+shift+f"
+        },
+        {
+            "id": "Terminal.DuplicatePaneAuto",
+            "keys": "alt+shift+d"
+        }
+    ],
+    "newTabMenu": 
+    [
+        {
+            "type": "remainingProfiles"
+        }
+    ],
+    "profiles": 
+    {
+        "defaults": 
+        {
+            "experimental.retroTerminalEffect": true,
+            "opacity": 90,
+            "useAcrylic": false
+        },
+        "list": 
+        [
+            {
+                "commandline": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\"",
+                "experimental.rainbowSuggestions": true,
+                "experimental.repositionCursorWithMouse": true,
+                "font": 
+                {
+                    "face": "JetBrains Mono"
+                },
+                "guid": "{61c54bbd-c2c6-5271-96e7-009a87ff44bf}",
+                "hidden": false,
+                "icon": "ms-appx:///ProfileIcons/pwsh.png",
+                "name": "Windows PowerShell",
+                "showMarksOnScrollbar": true
+            },
+            {
+                "commandline": "%SystemRoot%\\System32\\cmd.exe",
+                "experimental.rainbowSuggestions": true,
+                "experimental.repositionCursorWithMouse": true,
+                "font": 
+                {
+                    "face": "Geist Mono"
+                },
+                "guid": "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}",
+                "hidden": false,
+                "name": "Command Prompt",
+                "showMarksOnScrollbar": true
+            },
+            {
+                "guid": "{b453ae62-4e3d-5e58-b989-0a998ec441b8}",
+                "hidden": false,
+                "name": "Azure Cloud Shell",
+                "source": "Windows.Terminal.Azure"
+            },
+            {
+                "guid": "{2ece5bfe-50ed-5f3a-ab87-5cd4baafed2b}",
+                "hidden": false,
+                "name": "Git Bash",
+                "source": "Git"
+            },
+            {
+                "guid": "{2075ccb8-13d3-5567-b114-5817e3c5fb0b}",
+                "hidden": false,
+                "name": "Developer Command Prompt for VS 2019",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{95fd84a6-a6b2-525f-af14-ebb436461620}",
+                "hidden": false,
+                "name": "Developer PowerShell for VS 2019",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{cf05d3d9-675b-5019-99ee-0a630eb9c379}",
+                "hidden": false,
+                "name": "Developer Command Prompt for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{bc5670da-f5a0-5843-a168-1ce7a6aa8788}",
+                "hidden": false,
+                "name": "Developer PowerShell for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{4b493018-7d75-55da-91b6-6cee38dc0ccf}",
+                "hidden": false,
+                "name": "Ubuntu",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{7a8ba0d1-3e7d-57cf-be33-a6d246816c07}",
+                "hidden": false,
+                "name": "archlinux",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{0eb67b0f-ee45-550f-b9da-4ffe2952919a}",
+                "hidden": false,
+                "name": "archlinux",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{399a3b15-6fbd-505c-a62d-ee25a233e7ef}",
+                "hidden": false,
+                "name": "archlinux",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "commandline": "%WINDIR%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy ByPass -NoExit -Command \"& '__USERPROFILE__\\miniconda3\\shell\\condabin\\conda-hook.ps1' ; conda activate '__USERPROFILE__\\miniconda3' \"",
+                "guid": "{baef6041-a2f3-5472-b295-a7d7fb0ed62f}",
+                "icon": "__USERPROFILE__\\miniconda3\\Menu\\anaconda_powershell_prompt.ico",
+                "name": "Anaconda PowerShell Prompt (miniconda3)",
+                "startingDirectory": "__USERPROFILE__"
+            },
+            {
+                "commandline": "%WINDIR%\\System32\\cmd.exe \"/K\" __USERPROFILE__\\miniconda3\\Scripts\\activate.bat __USERPROFILE__\\miniconda3",
+                "guid": "{35427e1d-45ad-517a-8692-8d5e4093f90f}",
+                "icon": "__USERPROFILE__\\miniconda3\\Menu\\anaconda_prompt.ico",
+                "name": "Anaconda Prompt (miniconda3)",
+                "startingDirectory": "__USERPROFILE__"
+            },
+            {
+                "guid": "{19575d61-7ca3-5941-862e-eeb715fac654}",
+                "hidden": false,
+                "name": "Developer Command Prompt for VS 18",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{791bc0da-4014-53cd-925b-0d6c9b120a4c}",
+                "hidden": false,
+                "name": "Developer PowerShell for VS 18",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{c91fb012-a1d1-5520-8560-d5d316f53687}",
+                "hidden": false,
+                "name": "pane-arch",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{f10e81a8-44be-5b2d-8043-e49911116b24}",
+                "hidden": false,
+                "name": "zeroclaw-ubuntu",
+                "source": "Microsoft.WSL"
+            },
+            {
+                "guid": "{e003f3c0-8bb5-56e0-b215-fa31316eb58d}",
+                "hidden": true,
+                "name": "Developer Command Prompt for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            },
+            {
+                "guid": "{f8175be5-7be6-5c4b-9a83-9d63a34a7942}",
+                "hidden": true,
+                "name": "Developer PowerShell for VS 2022",
+                "source": "Windows.Terminal.VisualStudio"
+            }
+        ]
+    },
+    "rendering.graphicsAPI": "direct3d11",
+    "schemes": [],
+    "themes": [],
+    "useAcrylicInTabRow": false
+}

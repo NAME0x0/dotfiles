@@ -1,0 +1,98 @@
+.shell powershell
+
+# ============================================================
+# FOCUS WINDOWS (Alt + vim keys)
+# ============================================================
+alt + h                 : komorebic focus left
+alt + j                 : komorebic focus down
+alt + k                 : komorebic focus up
+alt + l                 : komorebic focus right
+
+# ============================================================
+# MOVE WINDOWS (Alt + Shift + vim keys)
+# ============================================================
+alt + shift + h         : komorebic move left
+alt + shift + j         : komorebic move down
+alt + shift + k         : komorebic move up
+alt + shift + l         : komorebic move right
+
+# ============================================================
+# RESIZE (Alt + =/-)
+# ============================================================
+alt + oem_plus          : komorebic resize-axis horizontal increase
+alt + oem_minus         : komorebic resize-axis horizontal decrease
+alt + shift + oem_plus  : komorebic resize-axis vertical increase
+alt + shift + oem_minus : komorebic resize-axis vertical decrease
+
+# ============================================================
+# FOCUS WORKSPACE (Alt + number)
+# ============================================================
+alt + 1                 : komorebic focus-workspace 0
+alt + 2                 : komorebic focus-workspace 1
+alt + 3                 : komorebic focus-workspace 2
+alt + 4                 : komorebic focus-workspace 3
+alt + 5                 : komorebic focus-workspace 4
+alt + 6                 : komorebic focus-workspace 5
+alt + 7                 : komorebic focus-workspace 6
+alt + 8                 : komorebic focus-workspace 7
+alt + 9                 : komorebic focus-workspace 8
+
+# ============================================================
+# MOVE TO WORKSPACE (Alt + Shift + number)
+# ============================================================
+alt + shift + 1         : komorebic move-to-workspace 0
+alt + shift + 2         : komorebic move-to-workspace 1
+alt + shift + 3         : komorebic move-to-workspace 2
+alt + shift + 4         : komorebic move-to-workspace 3
+alt + shift + 5         : komorebic move-to-workspace 4
+alt + shift + 6         : komorebic move-to-workspace 5
+alt + shift + 7         : komorebic move-to-workspace 6
+alt + shift + 8         : komorebic move-to-workspace 7
+alt + shift + 9         : komorebic move-to-workspace 8
+
+# ============================================================
+# CYCLE WORKSPACES (Alt + [ / ])
+# ============================================================
+alt + oem_4             : komorebic cycle-workspace previous
+alt + oem_6             : komorebic cycle-workspace next
+
+# ============================================================
+# CYCLE FOCUS within workspace (Alt + , / .)
+# ============================================================
+alt + oem_comma         : komorebic cycle-focus previous
+alt + oem_period        : komorebic cycle-focus next
+
+# ============================================================
+# LAYOUT
+# ============================================================
+alt + x                 : komorebic flip-layout horizontal
+alt + y                 : komorebic flip-layout vertical
+alt + b                 : komorebic change-layout bsp
+alt + n                 : komorebic change-layout scrolling
+
+# ============================================================
+# TOGGLES
+# ============================================================
+alt + t                 : komorebic toggle-float
+alt + f                 : komorebic toggle-monocle
+alt + p                 : komorebic toggle-pause
+
+# ============================================================
+# WINDOW MANAGEMENT
+# ============================================================
+alt + return            : komorebic promote
+alt + shift + r         : komorebic retile
+alt + shift + q         : komorebic close
+
+# ============================================================
+# STACKING
+# ============================================================
+alt + s                 : komorebic stack left
+alt + shift + s         : komorebic unstack
+alt + oem_3             : komorebic cycle-stack next
+
+# ============================================================
+# LAUNCH APPS
+# ============================================================
+alt + c                 : Start-Process wt -ArgumentList "-w new cmd.exe /k `"set CLAUDECODE=`""
+alt + w                 : Start-Process wt -ArgumentList "-w new powershell -NoProfile -Command winfetch; Read-Host 'Press Enter to close'"

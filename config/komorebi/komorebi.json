@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LGUG2Z/komorebi/v0.1.40/schema.json",
+  "app_specific_configuration_path": "__USERPROFILE__/applications.json",
+  "window_hiding_behaviour": "Cloak",
+  "cross_monitor_move_behaviour": "Insert",
+  "default_workspace_padding": 8,
+  "default_container_padding": 8,
+  "border_enabled": true,
+  "border_width": 2,
+  "border_offset": -1,
+  "border_colours": {
+    "single": "#FC3D21",
+    "stack": "#7A9E7A",
+    "monocle": "#D4A04A",
+    "unfocused": "#2a2a2c"
+  },
+  "animation": {
+    "enabled": true,
+    "duration": 220,
+    "style": "EaseOutQuint",
+    "fps": 60
+  },
+  "stackbar": {
+    "height": 30,
+    "mode": "OnStack",
+    "tabs": {
+      "focused_text": "#f0ede8",
+      "unfocused_text": "#8e8c88",
+      "background": "#1c1c1e"
+    }
+  },
+  "monitors": [
+    {
+      "workspaces": [
+        { "name": "1", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "2", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "3", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "4", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "5", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "6", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "7", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "8", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } },
+        { "name": "9", "layout": "Scrolling", "layout_options": { "scrolling": { "columns": 1 } } }
+      ]
+    }
+  ],
+  "ignore_rules": [
+    { "kind": "Exe", "id": "Taskmgr.exe", "matching_strategy": "Equals" },
+    { "kind": "Exe", "id": "YASB.exe", "matching_strategy": "Equals" },
+    { "kind": "Exe", "id": "komorebi-bar.exe", "matching_strategy": "Equals" },
+    { "kind": "Title", "id": "Picture-in-Picture", "matching_strategy": "Equals" },
+    { "kind": "Exe", "id": "explorer.exe", "matching_strategy": "Equals" },
+    { "kind": "Class", "id": "OperationStatusWindow", "matching_strategy": "Equals" },
+    { "kind": "Class", "id": "#32770", "matching_strategy": "Equals" }
+  ]
+}
+

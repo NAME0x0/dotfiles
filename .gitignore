@@ -1,0 +1,28 @@
+# Never commit the Notes widget payload - it holds secrets.
+notes.txt
+**/notes.txt
+
+# Backups created by install.ps1 / setup-wizard.ps1
+*.bak
+*.bak-*
+
+# Logs
+*.log
+autostart.log
+yasb.log
+
+# Flow Launcher personal usage data
+config/flowlauncher/History.json
+config/flowlauncher/UserSelectedRecord.json
+config/flowlauncher/MultipleTopMostRecord.json
+
+# Rainmeter runtime state
+**/Rainmeter.data
+**/@Backup/
+
+# Windows / editor noise
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/

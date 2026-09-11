@@ -1,0 +1,310 @@
+Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore
+Add-Type -AssemblyName WindowsBase
+
+$lockFile = Join-Path $env:TEMP "yasb_shortcuts.lock"
+if (Test-Path $lockFile) {
+    try {
+        $existingPid = [int](Get-Content $lockFile -ErrorAction Stop)
+        Stop-Process -Id $existingPid -Force -ErrorAction SilentlyContinue
+    } catch {}
+    Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
+    exit
+}
+Set-Content $lockFile $PID
+
+[xml]$xaml = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="YASB_Shortcuts" WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" Topmost="True" ShowInTaskbar="False"
+        SizeToContent="WidthAndHeight" ResizeMode="NoResize"
+        WindowStartupLocation="Manual">
+    <Border Background="#1c1c1e" CornerRadius="8" BorderBrush="#2a2a2c"
+            BorderThickness="1" Padding="28,16,28,24" MinWidth="720">
+        <StackPanel>
+            <DockPanel Margin="0,0,0,16">
+                <TextBlock x:Name="CloseBtn" Text="x" DockPanel.Dock="Right"
+                           Foreground="#8e8c88" FontFamily="JetBrainsMono NF" FontSize="13"
+                           Cursor="Hand" VerticalAlignment="Center"/>
+                <TextBlock Text="&quot;SHORTCUTS&quot;  KOMOREBI + NEOVIM + SCROLL" Foreground="#8e8c88"
+                           FontFamily="JetBrainsMono NF" FontSize="11"
+                           FontWeight="Medium" VerticalAlignment="Center"/>
+            </DockPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="24"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- COLUMN 1: KOMOREBI CORE -->
+                <StackPanel Grid.Column="0">
+
+                    <TextBlock Text="FOCUS" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,0,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + H/J/K/L" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="L / D / U / R" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="MOVE WINDOW" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + H/J/K/L" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Move direction" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="WORKSPACE" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + 1-9" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Focus workspace" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + 1-9" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Send to workspace" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + [ / ]" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Cycle workspaces" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="RESIZE" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + = / -" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Horizontal" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + = / -" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Vertical" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                </StackPanel>
+
+                <!-- COLUMN 2: KOMOREBI LAYOUT + SCROLL -->
+                <StackPanel Grid.Column="2">
+
+                    <TextBlock Text="LAYOUT" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,0,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + X" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Flip horizontal" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + Y" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Flip vertical" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="TOGGLE" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + T" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Float window" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + F" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Monocle (full)" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + P" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Pause tiling" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="WINDOW" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + Enter" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Promote to main" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + R" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Retile all" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + Q" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Close window" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="SCROLL FOCUS" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,12,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + Scroll" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Focus L / R" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + Scroll" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Move win L / R" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + , / ." Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Cycle focus (wrap)" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                </StackPanel>
+
+                <!-- COLUMN 3: STACKING + NEOVIM -->
+                <StackPanel Grid.Column="4">
+
+                    <TextBlock Text="STACK" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,0,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + S" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Stack left" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt+Sh + S" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Unstack" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Alt + ``" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Cycle stack" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                    <TextBlock Text="NEOVIM" Foreground="#FC3D21"
+                               FontFamily="JetBrainsMono NF" FontSize="10"
+                               FontWeight="Bold" Margin="0,16,0,6"/>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="i / a / o" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Insert mode" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="Esc / jj" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Normal mode" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="h / j / k / l" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="L / D / U / R" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text=":w / :q / :wq" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Save / Quit / Both" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="dd / yy / p" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Del / Yank / Paste" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="/ + pattern" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Search" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="u / Ctrl+R" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Undo / Redo" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="v / V / Ctrl+V" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Visual / Line / Block" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="gg / G" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Top / Bottom" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="w / b / e" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Word fwd/back/end" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,3">
+                        <TextBlock Text="ciw / diw / viw" Foreground="#f0ede8"
+                                   FontFamily="JetBrainsMono NF" FontSize="11" Width="140"/>
+                        <TextBlock Text="Change/Del/Sel word" Foreground="#8e8c88"
+                                   FontFamily="JetBrainsMono NF" FontSize="10"/>
+                    </DockPanel>
+
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Border>
+</Window>
+"@
+
+$reader = New-Object System.Xml.XmlNodeReader $xaml
+$window = [System.Windows.Markup.XamlReader]::Load($reader)
+
+$closeBtn = $window.FindName("CloseBtn")
+
+$screen = [System.Windows.SystemParameters]::WorkArea
+$window.Left = 260
+$window.Top  = $screen.Top + 8
+
+$closeBtn.Add_MouseLeftButtonDown({ $window.Close() })
+$window.Add_KeyDown({ if ($_.Key -eq 'Escape') { $window.Close() } })
+$window.Add_Deactivated({ $window.Close() })
+$window.Add_Closed({ Remove-Item $lockFile -Force -ErrorAction SilentlyContinue })
+
+$window.ShowDialog() | Out-Null

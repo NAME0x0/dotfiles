@@ -1,0 +1,201 @@
+{
+    "lock-keys-notifier":  {
+                               "version":  "1.2.0",
+                               "settings":  {
+                                                "soundFileOff":  "",
+                                                "height":  36,
+                                                "layout":  "minimal",
+                                                "nameNum":  "NUM",
+                                                "pollElevated":  1,
+                                                "notifyCapsLock":  1,
+                                                "shadowOpacity":  40,
+                                                "width":  124,
+                                                "scrollAccentColor":  "",
+                                                "offsetY":  48,
+                                                "autoSize":  1,
+                                                "notifyScrollLock":  1,
+                                                "insertAccentColor":  "",
+                                                "durationMs":  1500,
+                                                "fadeDurationMs":  150,
+                                                "fontWeight":  "bold",
+                                                "insertSingleLabel":  "pressed",
+                                                "fontFamily":  "Segoe UI",
+                                                "numAccentColor":  "",
+                                                "borderThickness":  0,
+                                                "suppressFullscreen":  0,
+                                                "notifyInsert":  0,
+                                                "soundFileOn":  "",
+                                                "insertDisplayMode":  "onoff",
+                                                "nameCaps":  "CAPS",
+                                                "backgroundColor":  "",
+                                                "soundInsert":  1,
+                                                "offsetX":  0,
+                                                "fontItalic":  0,
+                                                "padding":  9,
+                                                "labelOff":  "OFF",
+                                                "monitor":  "active",
+                                                "shadowSize":  13,
+                                                "textColor":  "",
+                                                "labelOn":  "ON",
+                                                "fadeEnabled":  1,
+                                                "soundMode":  "none",
+                                                "nameInsert":  "INSERT",
+                                                "cornerRadius":  18,
+                                                "positionAnchor":  "bottom-center",
+                                                "soundFile":  "",
+                                                "fontSize":  14,
+                                                "borderColor":  "",
+                                                "shadowOffsetY":  4,
+                                                "capsAccentColor":  "",
+                                                "nameScroll":  "SCROLL",
+                                                "shadowEnabled":  1,
+                                                "backgroundOpacity":  90,
+                                                "soundWhen":  "always",
+                                                "showIcon":  1,
+                                                "shadowColor":  "",
+                                                "notifyNumLock":  1
+                                            }
+                           },
+    "alt-tab-per-monitor":  {
+                                "version":  "1.2",
+                                "settings":  {
+                                                 "winAltTabWindows":  "allMonitors",
+                                                 "winAltTabLocation":  "primary",
+                                                 "altTabWindows":  "cursorMonitor",
+                                                 "altTabLocation":  "cursor"
+                                             }
+                            },
+    "windows-11-start-menu-styler":  {
+                                         "version":  "1.7",
+                                         "settings":  {
+                                                          "webContentCustomJs":  "",
+                                                          "resourceVariables[0].value":  "",
+                                                          "themeResourceVariables[0]":  "",
+                                                          "disableNewStartMenuLayout":  1,
+                                                          "resourceVariables[0].variableKey":  "",
+                                                          "styleConstants[0]":  "",
+                                                          "webContentStyles[0].target":  "",
+                                                          "webContentStyles[0].styles[0]":  "",
+                                                          "controlStyles[0].styles[0]":  "",
+                                                          "theme":  "TintedGlass",
+                                                          "controlStyles[0].target":  ""
+                                                      }
+                                     },
+    "taskbar-tray-system-icon-tweaks":  {
+                                            "version":  "1.3",
+                                            "settings":  {
+                                                             "hideStudioEffectsIcon":  0,
+                                                             "hideBellIcon":  "never",
+                                                             "hideGeolocationIcon":  1,
+                                                             "showDesktopButtonWidth":  12,
+                                                             "grayscaleBatteryIcon":  0,
+                                                             "hideMicrophoneIcon":  0,
+                                                             "hideVolumeIcon":  0,
+                                                             "hideRecallIcon":  0,
+                                                             "hideLanguageSupplementaryIcons":  0,
+                                                             "hideNetworkIcon":  0,
+                                                             "hideBatteryIcon":  0,
+                                                             "hideLanguageBar":  0
+                                                         }
+                                        },
+    "explorer-details-better-file-sizes":  {
+                                               "version":  "1.5.1",
+                                               "settings":  {
+                                                                "useIecTerms":  0,
+                                                                "calculateFolderSizes":  "everything",
+                                                                "disableKbOnlySizes":  1,
+                                                                "sortSizesMixFolders":  1
+                                                            }
+                                           },
+    "island-media-controls":  {
+                                  "version":  "0.9.211",
+                                  "settings":  {
+                                                   "Main.ExpandedHeight":  500,
+                                                   "Main.Height":  36,
+                                                   "Main.AnimationSpeed":  126,
+                                                   "Main.HoverLerpSpeed":  28,
+                                                   "Main.MarginLeft":  18,
+                                                   "Main.MarginRight":  4,
+                                                   "Main.AutoSizeToTaskbar":  1,
+                                                   "Main.BackdropWgcBlurStdDev":  18,
+                                                   "Main.HoverScale":  106,
+                                                   "Main.BackdropInitialFrameSkip":  2,
+                                                   "Main.AllowScreenCapture":  0,
+                                                   "Main.PopupShadowDepth":  58,
+                                                   "Main.PopupButtonStyle":  "minimal_transport",
+                                                   "Main.HideWhenNoMedia":  0,
+                                                   "Main.Position":  "taskbar_left_edge",
+                                                   "Main.Material":  "solid",
+                                                   "Main.PopupBackdropCoverEffect":  "dark_only",
+                                                   "Main.PopupShadowOpacity":  70,
+                                                   "Main.ArtworkAbstractMode":  "browser_original",
+                                                   "Main.PopupCardGap":  8,
+                                                   "Main.PopupSpacing":  20,
+                                                   "Main.CompactWidth":  155,
+                                                   "Main.ExpandedWidth":  360,
+                                                   "Main.BackdropFallbackBlurPasses":  5,
+                                                   "Main.BackdropFallbackCaptureScale":  2,
+                                                   "Main.Compact":  1
+                                               }
+                              },
+    "windows-11-taskbar-styler":  {
+                                      "version":  "1.9",
+                                      "settings":  {
+                                                       "xamlDiagnosticsHandling":  "alert",
+                                                       "clickThroughTaskbar":  0,
+                                                       "styleConstants[0]":  "",
+                                                       "themeResourceVariables[0]":  "",
+                                                       "controlStyles[0].styles[0]":  "",
+                                                       "theme":  "SimplyTransparent",
+                                                       "controlStyles[0].target":  ""
+                                                   }
+                                  },
+    "taskbar-show-desktop-button-aero-peek":  {
+                                                  "version":  "1.0.2",
+                                                  "settings":  {
+                                                                   "hoverDelay":  500
+                                                               }
+                                              },
+    "taskbar-dock-animation":  {
+                                   "version":  "1.9.2",
+                                   "settings":  {
+                                                    "AnimationType":  0,
+                                                    "DisableBounce":  0,
+                                                    "LerpSpeed":  60,
+                                                    "DisableVerticalBounce":  0,
+                                                    "MirrorForTopTaskbar":  0,
+                                                    "ExcludeSystemButtonsMode":  0,
+                                                    "MaxScale":  130,
+                                                    "EffectRadius":  100,
+                                                    "TaskbarLabelsMode":  0,
+                                                    "FocusDuration":  200,
+                                                    "SpacingFactor":  50,
+                                                    "BounceDelay":  500
+                                                }
+                               },
+    "slick-window-arrangement":  {
+                                     "version":  "1.0.2",
+                                     "settings":  {
+                                                      "SlidingAnimationSlowdown":  15,
+                                                      "KeysToDisableSnapping.Alt":  1,
+                                                      "KeysToDisableSnapping.Shift":  0,
+                                                      "SnapWindowsDistance":  25,
+                                                      "KeysToDisableSnapping.Ctrl":  0,
+                                                      "SnapWindowsWhenDragging":  1,
+                                                      "SlidingAnimation":  1,
+                                                      "SnapWindowsWhenSliding":  1
+                                                  }
+                                 },
+    "windows-11-notification-center-styler":  {
+                                                  "version":  "1.6",
+                                                  "settings":  {
+                                                                   "resourceVariables[0].value":  "",
+                                                                   "resourceVariables[0].variableKey":  "",
+                                                                   "styleConstants[0]":  "",
+                                                                   "themeResourceVariables[0]":  "",
+                                                                   "controlStyles[0].styles[0]":  "",
+                                                                   "theme":  "Matter",
+                                                                   "controlStyles[0].target":  ""
+                                                               }
+                                              }
+}

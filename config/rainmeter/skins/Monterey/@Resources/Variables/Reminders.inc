@@ -1,0 +1,9 @@
+[Variables]
+ListName=Reminders
+Item1=Pray
+Item2=Train
+Item3=Eat
+Item4=StuDie
+Item5=Play
+Item6=Sleep
+Item7=Repeat
