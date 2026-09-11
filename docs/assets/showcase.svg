@@ -1,0 +1,306 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" width="900" height="520" role="img"
+     aria-label="Animated tour of the dotfiles desktop: tiling window management with komorebi, the YASB status bar, one-command install, crash-resilient autostart, and the keybinding map.">
+  <title>komorebi + YASB desktop - animated tour</title>
+  <desc>Four scenes cycle: window tiling and focus movement, the one-command installer,
+        the autostart task recovering from an Explorer crash, and the keyboard shortcuts.</desc>
+
+  <style>
+    /* Self-contained dark card so it reads correctly on GitHub light AND dark. */
+    .bg      { fill: #1c1c1e; }
+    /* Lifted off the base and given a hairline edge - at #242426 on #1c1c1e the
+       panels were effectively invisible once GitHub scaled the image down. */
+    .surface { fill: #27272b; stroke: #35353b; stroke-width: 1; }
+    .border  { fill: none; stroke: #2a2a2c; stroke-width: 1; }
+    .txt     { fill: #f0ede8; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+    .sub     { fill: #8e8c88; font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+    .orange  { fill: #FC3D21; }
+    .green   { fill: #7A9E7A; }
+    .amber   { fill: #D4A04A; }
+    .b       { font-weight: 600; }
+
+    /* ---- scene cycling: 4 scenes, 6s each, 24s loop ---------------------- */
+    .scene { opacity: 0; animation: cycle 24s infinite; }
+    #s1 { animation-delay:  0s; }
+    #s2 { animation-delay:  6s; }
+    #s3 { animation-delay: 12s; }
+    #s4 { animation-delay: 18s; }
+    @keyframes cycle {
+      0%    { opacity: 0; }
+      1.5%  { opacity: 1; }
+      23%   { opacity: 1; }
+      25%   { opacity: 0; }
+      100%  { opacity: 0; }
+    }
+
+    .dot { fill: #2a2a2c; animation: dotOn 24s infinite; }
+    #d1 { animation-delay:  0s; }
+    #d2 { animation-delay:  6s; }
+    #d3 { animation-delay: 12s; }
+    #d4 { animation-delay: 18s; }
+    @keyframes dotOn {
+      0%, 0.9%   { fill: #2a2a2c; }
+      1.5%, 24%  { fill: #FC3D21; }
+      25%, 100%  { fill: #2a2a2c; }
+    }
+
+    /* ---- scene 1: focus ring hops between tiles -------------------------- */
+    .focusring { fill: none; stroke: #FC3D21; stroke-width: 2; animation: hop 6s infinite; }
+    @keyframes hop {
+      0%,  18%  { transform: translate(0, 0); }
+      25%, 43%  { transform: translate(286px, 0); }
+      50%, 68%  { transform: translate(286px, 121px); }
+      75%, 93%  { transform: translate(0, 121px); }
+      100%      { transform: translate(0, 0); }
+    }
+    .keycap { animation: keyflash 6s infinite; }
+    #k-l { animation-delay: 1.5s; }
+    #k-j { animation-delay: 3.0s; }
+    #k-h { animation-delay: 4.5s; }
+    @keyframes keyflash {
+      0%, 4%   { fill: #FC3D21; }
+      12%, 100%{ fill: #2a2a2c; }
+    }
+
+    /* ---- scene 2 + 3: lines appear in sequence --------------------------- */
+    .line { opacity: 0; animation: appear 6s infinite; }
+    @keyframes appear { 0% { opacity: 0; } 100% { opacity: 1; } }
+    .l1 { animation-delay: 0.3s; } .l2 { animation-delay: 0.9s; }
+    .l3 { animation-delay: 1.5s; } .l4 { animation-delay: 2.1s; }
+    .l5 { animation-delay: 2.7s; } .l6 { animation-delay: 3.3s; }
+    .l7 { animation-delay: 3.9s; } .l8 { animation-delay: 4.5s; }
+
+    .caret { animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+    /* ---- scene 3: the crash pulse ---------------------------------------- */
+    .crash { animation: crashPulse 6s infinite; }
+    @keyframes crashPulse {
+      0%, 30%  { opacity: 0.25; }
+      34%, 48% { opacity: 1; }
+      60%,100% { opacity: 0.25; }
+    }
+    .heal { animation: healIn 6s infinite; }
+    @keyframes healIn {
+      0%, 60%  { opacity: 0; }
+      68%,100% { opacity: 1; }
+    }
+
+    /* ---- persistent bar: workspace pills --------------------------------- */
+    .ws { fill: #2a2a2c; animation: wsCycle 24s infinite; }
+    #w1 { animation-delay: 0s; } #w2 { animation-delay: 6s; }
+    #w3 { animation-delay: 12s; } #w4 { animation-delay: 18s; }
+    @keyframes wsCycle {
+      0%, 1%    { fill: #2a2a2c; }
+      2%, 24%   { fill: #FC3D21; }
+      25%, 100% { fill: #2a2a2c; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .scene { animation: none; opacity: 1; }
+      #s2, #s3, #s4 { display: none; }
+      .focusring, .keycap, .line, .caret, .crash, .heal, .ws, .dot { animation: none; }
+      .line { opacity: 1; }
+    }
+  </style>
+
+  <!-- card -->
+  <rect class="bg" x="0" y="0" width="900" height="520" rx="10"/>
+  <rect class="border" x="0.5" y="0.5" width="899" height="519" rx="10"/>
+
+  <!-- ================= persistent YASB-style bar ========================= -->
+  <g>
+    <rect class="surface" x="16" y="16" width="868" height="38" rx="10"/>
+    <rect class="orange" x="30" y="29" width="18" height="12" rx="6"/>
+    <circle class="ws" id="w1" cx="60" cy="35" r="5"/>
+    <circle class="ws" id="w2" cx="76" cy="35" r="5"/>
+    <circle class="ws" id="w3" cx="92" cy="35" r="5"/>
+    <circle class="ws" id="w4" cx="108" cy="35" r="5"/>
+
+    <text class="sub" x="140" y="40" font-size="12">"WORKSPACES"</text>
+
+    <text class="txt b" x="404" y="40" font-size="13">"TIME"  20:27</text>
+
+    <text class="sub" x="640" y="40" font-size="12">"WIFI"</text>
+    <text class="txt" x="698" y="40" font-size="12">HOME-WIFI</text>
+    <text class="sub" x="772" y="40" font-size="12">"BAT"</text>
+    <text class="txt" x="812" y="40" font-size="12">100%</text>
+    <circle class="orange" cx="862" cy="35" r="6"/>
+  </g>
+
+  <!-- ================= SCENE 1 - tiling ================================= -->
+  <g class="scene" id="s1">
+    <text class="txt b" x="32" y="88" font-size="15">komorebi</text>
+    <text class="sub" x="112" y="88" font-size="13">- scrolling tiles, keyboard focus, no mouse</text>
+
+    <g transform="translate(32,104)">
+      <rect class="surface" x="0"   y="0"   width="278" height="113" rx="6"/>
+      <rect class="surface" x="286" y="0"   width="278" height="113" rx="6"/>
+      <rect class="surface" x="0"   y="121" width="278" height="113" rx="6"/>
+      <rect class="surface" x="286" y="121" width="278" height="113" rx="6"/>
+
+      <text class="sub" x="14" y="24"  font-size="11">EDITOR</text>
+      <text class="sub" x="300" y="24" font-size="11">TERMINAL</text>
+      <text class="sub" x="14" y="145" font-size="11">BROWSER</text>
+      <text class="sub" x="300" y="145" font-size="11">FILES</text>
+
+      <rect class="focusring" x="1" y="1" width="276" height="111" rx="6"/>
+    </g>
+
+    <g transform="translate(620,104)">
+      <text class="sub" x="0" y="14" font-size="11">MOVE FOCUS</text>
+      <rect class="keycap" id="k-h" x="0"  y="28" width="34" height="30" rx="5" fill="#2a2a2c"/>
+      <rect class="keycap" id="k-j" x="42" y="28" width="34" height="30" rx="5" fill="#2a2a2c"/>
+      <rect class="keycap" id="k-k" x="84" y="28" width="34" height="30" rx="5" fill="#2a2a2c"/>
+      <rect class="keycap" id="k-l" x="126" y="28" width="34" height="30" rx="5" fill="#2a2a2c"/>
+      <text class="txt" x="13"  y="48" font-size="13">H</text>
+      <text class="txt" x="55"  y="48" font-size="13">J</text>
+      <text class="txt" x="97"  y="48" font-size="13">K</text>
+      <text class="txt" x="139" y="48" font-size="13">L</text>
+      <text class="sub" x="0" y="78" font-size="11">ALT + KEY</text>
+
+      <text class="sub" x="0" y="112" font-size="11">MOVE WINDOW</text>
+      <text class="txt" x="0" y="132" font-size="12">ALT + SHIFT + HJKL</text>
+      <text class="sub" x="0" y="164" font-size="11">SCROLL FOCUS</text>
+      <text class="txt" x="0" y="184" font-size="12">ALT + WHEEL</text>
+      <text class="sub" x="0" y="216" font-size="11">LAYOUT</text>
+      <text class="txt" x="0" y="236" font-size="12">ALT + B / ALT + N</text>
+    </g>
+  </g>
+
+  <!-- ================= SCENE 2 - install ================================ -->
+  <g class="scene" id="s2">
+    <text class="txt b" x="32" y="88" font-size="15">one command</text>
+    <text class="sub" x="150" y="88" font-size="13">- packages, configs, autostart, wizard</text>
+
+    <rect class="surface" x="32" y="104" width="836" height="286" rx="8"/>
+    <g font-size="13">
+      <text class="orange" x="52" y="134">&gt;</text>
+      <text class="txt"    x="70" y="134">irm https://raw.githubusercontent.com/NAME0x0/dotfiles/main/install.ps1 | iex</text>
+
+      <text class="green line l1" x="52" y="166">[ok]</text>
+      <text class="txt   line l1" x="96" y="166">komorebi, whkd, YASB, AutoHotkey, Rainmeter, Windhawk</text>
+
+      <text class="green line l2" x="52" y="192">[ok]</text>
+      <text class="txt   line l2" x="96" y="192">configs deployed  (old files kept as .bak-&lt;timestamp&gt;)</text>
+
+      <text class="green line l3" x="52" y="218">[ok]</text>
+      <text class="txt   line l3" x="96" y="218">user paths resolved in 9 files</text>
+
+      <text class="green line l4" x="52" y="244">[ok]</text>
+      <text class="txt   line l4" x="96" y="244">11 Windhawk mods imported</text>
+
+      <text class="green line l5" x="52" y="270">[ok]</text>
+      <text class="txt   line l5" x="96" y="270">scheduled task "Desktop WM Autostart" registered</text>
+
+      <text class="sub   line l6" x="52" y="302">wizard:</text>
+      <text class="txt   line l6" x="110" y="302">gaps, borders, accent, bar height, font</text>
+
+      <text class="sub   line l7" x="52" y="328">display:</text>
+      <text class="txt   line l7" x="122" y="328">2560x1440 detected - rescaling 21 Rainmeter skins</text>
+
+      <text class="amber line l8" x="52" y="360">done.</text>
+      <text class="sub   line l8" x="104" y="360">alt+h/j/k/l to move focus</text>
+      <rect class="txt caret line l8" x="298" y="349" width="7" height="14"/>
+    </g>
+
+    <text class="sub" x="32" y="420" font-size="12">Flags: -Components  -SkipPackages  -SkipWizard  -NonInteractive</text>
+    <text class="sub" x="32" y="442" font-size="12">Every replaced file is backed up. Re-running is safe.</text>
+  </g>
+
+  <!-- ================= SCENE 3 - autostart resilience =================== -->
+  <g class="scene" id="s3">
+    <text class="txt b" x="32" y="88" font-size="15">survives an Explorer crash</text>
+    <text class="sub" x="272" y="88" font-size="13">- the reason this repo exists</text>
+
+    <rect class="surface" x="32" y="104" width="836" height="200" rx="8"/>
+
+    <!-- timeline -->
+    <line x1="72" y1="200" x2="828" y2="200" stroke="#3a3a42" stroke-width="2"/>
+
+    <g>
+      <circle class="green" cx="120" cy="200" r="7"/>
+      <text class="sub" x="96" y="176" font-size="11">LOGON</text>
+      <text class="txt" x="86" y="232" font-size="12">+30s start</text>
+    </g>
+
+    <g class="crash">
+      <circle class="orange" cx="390" cy="200" r="7"/>
+      <text class="orange" x="330" y="176" font-size="11">EXPLORER CRASHES</text>
+      <text class="sub" x="330" y="232" font-size="12">Startup folder abandoned</text>
+    </g>
+
+    <g class="heal">
+      <circle class="amber" cx="590" cy="200" r="7"/>
+      <text class="amber" x="530" y="176" font-size="11">WINLOGON 1002</text>
+      <text class="sub" x="546" y="232" font-size="12">task re-fires</text>
+    </g>
+
+    <g class="heal">
+      <circle class="green" cx="790" cy="200" r="7"/>
+      <text class="green" x="742" y="176" font-size="11">RECOVERED</text>
+      <text class="txt" x="748" y="232" font-size="12">32 seconds</text>
+    </g>
+
+    <g font-size="12">
+      <text class="sub" x="32" y="344">Windows runs Startup-folder items one at a time and gives up on the rest when the shell dies.</text>
+      <text class="sub" x="32" y="366">This setup runs from Task Scheduler instead, on two triggers: at logon, and again on Winlogon</text>
+      <text class="sub" x="32" y="388">event 1002. The launcher only starts what is missing, so repeat triggers cannot duplicate it.</text>
+      <text class="txt" x="32" y="424">Measured, not estimated: everything killed + shell killed, back in 32s unattended.</text>
+    </g>
+  </g>
+
+  <!-- ================= SCENE 4 - the stack ============================== -->
+  <g class="scene" id="s4">
+    <text class="txt b" x="32" y="88" font-size="15">the stack</text>
+    <text class="sub" x="122" y="88" font-size="13">- every piece and what it does</text>
+
+    <g font-size="12">
+      <rect class="surface" x="32"  y="104" width="270" height="88" rx="6"/>
+      <text class="orange b" x="50" y="130" font-size="13">komorebi + whkd</text>
+      <text class="sub" x="50" y="152">tiling window manager and the</text>
+      <text class="sub" x="50" y="170">hotkey daemon that drives it</text>
+
+      <rect class="surface" x="315" y="104" width="270" height="88" rx="6"/>
+      <text class="orange" x="333" y="130" font-size="13">YASB</text>
+      <text class="sub" x="333" y="152">status bar - workspaces, media,</text>
+      <text class="sub" x="333" y="170">wifi, volume, battery, power</text>
+
+      <rect class="surface" x="598" y="104" width="270" height="88" rx="6"/>
+      <text class="orange" x="616" y="130" font-size="13">Rainmeter</text>
+      <text class="sub" x="616" y="152">desktop widgets - clock, stats,</text>
+      <text class="sub" x="616" y="170">launcher, wallpaper slideshow</text>
+
+      <rect class="surface" x="32"  y="206" width="270" height="88" rx="6"/>
+      <text class="orange" x="50" y="232" font-size="13">Windhawk</text>
+      <text class="sub" x="50" y="254">11 enabled shell mods - taskbar,</text>
+      <text class="sub" x="50" y="272">start menu, notification centre</text>
+
+      <rect class="surface" x="315" y="206" width="270" height="88" rx="6"/>
+      <text class="orange" x="333" y="232" font-size="13">AutoHotkey v2</text>
+      <text class="sub" x="333" y="254">alt+wheel focus scrolling and</text>
+      <text class="sub" x="333" y="272">hold-to-type German accents</text>
+
+      <rect class="surface" x="598" y="206" width="270" height="88" rx="6"/>
+      <text class="orange" x="616" y="232" font-size="13">Terminal + shell</text>
+      <text class="sub" x="616" y="254">Windows Terminal, PowerShell</text>
+      <text class="sub" x="616" y="272">profile, winfetch, Flow Launcher</text>
+    </g>
+
+    <g font-size="12">
+      <text class="sub" x="32" y="336">Design language: Off-White x Space Grey x NASA Orange. Labels in "QUOTATION MARKS",</text>
+      <text class="sub" x="32" y="358">industrial spacing, one accent colour carried across every surface.</text>
+      <text class="txt" x="32" y="396">Configs ship with no username and no API keys - both are resolved at install time.</text>
+      <text class="sub" x="32" y="424">komorebi is free for personal use only. Commercial use needs a licence from LGUG2Z.</text>
+    </g>
+  </g>
+
+  <!-- ================= footer ========================================== -->
+  <g>
+    <circle class="dot" id="d1" cx="416" cy="492" r="4"/>
+    <circle class="dot" id="d2" cx="434" cy="492" r="4"/>
+    <circle class="dot" id="d3" cx="452" cy="492" r="4"/>
+    <circle class="dot" id="d4" cx="470" cy="492" r="4"/>
+    <text class="sub" x="32" y="497" font-size="11">NAME0x0/dotfiles</text>
+    <text class="sub" x="762" y="497" font-size="11">WINDOWS 11</text>
+  </g>
+</svg>

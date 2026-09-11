@@ -1,35 +1,41 @@
+<div align="center">
+
 # dotfiles
 
-A tiling Windows 11 desktop: **komorebi** for window management, **YASB** for the status bar,
-**Rainmeter** for desktop widgets, **Windhawk** for shell patches.
+**A tiling Windows 11 desktop.** komorebi manages the windows, YASB draws the bar,
+Rainmeter fills the desktop, Windhawk patches the shell.
 
-Design language is Off-White × Space Grey × NASA Orange — labels in `"QUOTATION MARKS"`, industrial
-spacing, one accent colour (`#FC3D21`) carried across every surface.
+One command installs it. A wizard sizes it to your screen. It survives an Explorer crash.
 
-> Everything here installs with one command and configures itself with a wizard.
-> Jump to [Quick setup](#quick-setup).
+<img src="docs/assets/showcase.svg" width="100%" alt="Animated tour: window tiling and focus movement, the one-command installer, autostart recovering from an Explorer crash, and the full stack." />
+
+![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?style=flat-square&logo=windows11&logoColor=white)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?style=flat-square&logo=powershell&logoColor=white)
+![winget](https://img.shields.io/badge/installs%20via-winget-2EA043?style=flat-square)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+
+</div>
 
 ---
 
 ## Quick setup
 
-Open PowerShell and run:
-
 ```powershell
 irm https://raw.githubusercontent.com/NAME0x0/dotfiles/main/install.ps1 | iex
 ```
 
-That single command will:
+That one command asks where to put the repo, then:
 
-1. Ask where you want the repo (default `%USERPROFILE%\dotfiles`) and clone it
-2. Install every package below with `winget`
-3. Deploy each config to the location its app expects, backing up anything already there
-4. Import the Windhawk mod list and settings
-5. Register the autostart task
-6. Launch the **setup wizard**, which sizes gaps, borders, bar height, fonts and rescales the
-   Rainmeter widget positions to your resolution
+| Step | What happens |
+|:--:|---|
+| 1 | Installs 9 packages with `winget` |
+| 2 | Deploys every config to the path its app expects |
+| 3 | Resolves `__USERPROFILE__` placeholders for your account |
+| 4 | Imports 11 Windhawk mods and their settings |
+| 5 | Registers the crash-resilient autostart task |
+| 6 | Runs the wizard: gaps, borders, accent, bar height, font, Rainmeter positions |
 
-Prefer to read before you run? Clone first:
+Prefer to read the code first? Reasonable:
 
 ```powershell
 git clone https://github.com/NAME0x0/dotfiles.git "$env:USERPROFILE\dotfiles"
@@ -37,43 +43,129 @@ cd "$env:USERPROFILE\dotfiles"
 .\install.ps1
 ```
 
-### Installer options
+**Nothing is destroyed.** Every file it replaces is renamed `<name>.bak-<timestamp>` first.
+Re-running is safe — the installer and the launcher are both idempotent.
+
+<details>
+<summary><b>Installer flags</b></summary>
+
+<br>
 
 | Flag | Effect |
 |---|---|
 | `-InstallRoot <path>` | Where to keep the repo |
-| `-Components komorebi,yasb,…` | Install a subset only |
+| `-Components komorebi,yasb,…` | Install a subset. Valid: `komorebi` `yasb` `autohotkey` `rainmeter` `windhawk` `terminal` `powershell` `flowlauncher` `autostart` |
 | `-SkipPackages` | Deploy configs without touching winget |
-| `-SkipWizard` | Do not run the wizard afterwards |
+| `-SkipWizard` | Don't run the wizard afterwards |
 | `-NonInteractive` | Take every default, never prompt |
 
 ```powershell
-# just the window manager, configs only
+# window manager only, configs without reinstalling anything
 .\install.ps1 -Components komorebi -SkipPackages
 
-# re-run the wizard on its own, any time
+# re-tune sizing later, on its own
 .\setup-wizard.ps1
 ```
 
-Every replaced file becomes `<name>.bak-<timestamp>` next to the original. Nothing is deleted.
+</details>
 
 ---
 
-## What's installed
+## The bar
 
-| Component | What it does | Project | winget id |
+<img src="docs/assets/bar.png" width="100%" alt="The YASB status bar: workspace indicators, pinned app launchers, clock, wifi, volume, battery and power menu." />
+
+YASB, 40px, `JetBrainsMono NF`. Workspace pills on the left track komorebi live over a named pipe.
+Labels sit in `"QUOTATION MARKS"` — Off-White × Space Grey × NASA Orange, one accent (`#FC3D21`)
+carried across every surface.
+
+---
+
+## Keybindings
+
+Driven by [`config/whkd/whkdrc`](config/whkd/whkdrc). Alt is the modifier throughout — it never
+fights Windows' own Win-key bindings.
+
+| Keys | Action |
+|---|---|
+| <kbd>Alt</kbd> <kbd>H</kbd> <kbd>J</kbd> <kbd>K</kbd> <kbd>L</kbd> | Move focus left / down / up / right |
+| <kbd>Alt</kbd> <kbd>Shift</kbd> + <kbd>H J K L</kbd> | Move the focused window |
+| <kbd>Alt</kbd> <kbd>,</kbd> / <kbd>.</kbd> | Cycle focus previous / next |
+| <kbd>Alt</kbd> <kbd>+</kbd> / <kbd>-</kbd> | Resize horizontally |
+| <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>+</kbd> / <kbd>-</kbd> | Resize vertically |
+| <kbd>Alt</kbd> <kbd>B</kbd> / <kbd>N</kbd> | bsp layout / scrolling layout |
+| <kbd>Alt</kbd> + <kbd>Wheel</kbd> | Scroll focus across columns *(AutoHotkey)* |
+| <kbd>Alt</kbd> <kbd>Shift</kbd> + <kbd>Wheel</kbd> | Move window across columns |
+| <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd> | Toggle hold-to-type German accents (A O U S) |
+
+---
+
+## Autostart that actually starts
+
+This is the part worth stealing even if you want none of the rest.
+
+Windows runs Startup-folder items **one at a time, with a ~30 second timeout each**, in the order
+HKLM Run → HKCU Run → Startup folder. If Explorer crashes partway through, the restarted shell
+re-runs only `RunOnce`. Everything behind the crash point silently never launches.
+
+That is not hypothetical. On 2026-09-10, update KB5124008 forced a reboot; Explorer crashed
+6 minutes into the post-update logon at item 10 of 17 (`ucrtbase.dll`, `0xc0000409`). komorebi,
+YASB and the AutoHotkey script were simply never started — for twelve hours, with no error anywhere.
+Explorer had crashed four times in the preceding month; the other three happened to land *after*
+the queue finished, so nothing broke. It was a coin flip.
+
+So the stack runs from **Task Scheduler**, not the Startup folder:
+
+| Trigger | Delay |
+|---|---|
+| At logon | 30s |
+| Winlogon event 1002 — *the shell crashed and restarted* | 20s |
+
+[`start-desktop.ps1`](config/autostart/start-desktop.ps1) checks each process and starts only what
+is missing, so repeated triggers cannot produce duplicates.
+
+**Measured, not estimated.** Killing all four processes and then `explorer.exe`:
+
+```
+19:33:27  shell killed        -> Winlogon 1002 logged
+19:33:48  task fired          (+21s, matches the PT20S trigger delay)
+19:33:55  all four running    komorebi, whkd, yasb, AutoHotkey64
+19:33:59  YASB reconnected    to komorebi's named pipe, zero errors
+```
+
+**32 seconds, unattended.**
+
+```powershell
+# what should be running
+Get-Process komorebi,whkd,yasb,AutoHotkey64,Rainmeter
+
+# autostart history
+Get-Content "$env:LOCALAPPDATA\komorebi\autostart.log" -Tail 20
+
+# force a run - safe, idempotent
+schtasks /run /tn "Desktop WM Autostart"
+```
+
+---
+
+## What's in the box
+
+| Component | Role | Project | winget id |
 |---|---|---|---|
-| komorebi | Tiling window manager | [LGUG2Z/komorebi](https://github.com/LGUG2Z/komorebi) · [docs](https://lgug2z.github.io/komorebi/) | `LGUG2Z.komorebi` |
-| whkd | Hotkey daemon driving komorebi | [LGUG2Z/whkd](https://github.com/LGUG2Z/whkd) | `LGUG2Z.whkd` |
-| YASB | Status bar | [amnweb/yasb](https://github.com/amnweb/yasb) | `AmN.yasb` |
-| AutoHotkey v2 | Alt+Wheel focus scrolling, German accent holds | [autohotkey.com](https://www.autohotkey.com/) | `AutoHotkey.AutoHotkey` |
-| Rainmeter | Desktop widgets | [rainmeter.net](https://www.rainmeter.net/) | `Rainmeter.Rainmeter` |
-| Windhawk | Shell/taskbar patches | [windhawk.net](https://windhawk.net/) | `RamenSoftware.Windhawk` |
-| Flow Launcher | Application launcher | [flowlauncher.com](https://www.flowlauncher.com/) | `Flow-Launcher.Flow-Launcher` |
-| Windows Terminal | Terminal | [microsoft/terminal](https://github.com/microsoft/terminal) | `Microsoft.WindowsTerminal` |
-| JetBrainsMono NF | Bar and terminal font | [nerdfonts.com](https://www.nerdfonts.com/) | `DEVCOM.JetBrainsMonoNerdFont` |
+| **komorebi** | Tiling window manager | [LGUG2Z/komorebi](https://github.com/LGUG2Z/komorebi) · [docs](https://lgug2z.github.io/komorebi/) | `LGUG2Z.komorebi` |
+| **whkd** | Hotkey daemon driving komorebi | [LGUG2Z/whkd](https://github.com/LGUG2Z/whkd) | `LGUG2Z.whkd` |
+| **YASB** | Status bar | [amnweb/yasb](https://github.com/amnweb/yasb) | `AmN.yasb` |
+| **AutoHotkey v2** | Alt+Wheel focus, accent holds | [autohotkey.com](https://www.autohotkey.com/) | `AutoHotkey.AutoHotkey` |
+| **Rainmeter** | Desktop widgets | [rainmeter.net](https://www.rainmeter.net/) | `Rainmeter.Rainmeter` |
+| **Windhawk** | Shell and taskbar mods | [windhawk.net](https://windhawk.net/) | `RamenSoftware.Windhawk` |
+| **Flow Launcher** | Application launcher | [flowlauncher.com](https://www.flowlauncher.com/) | `Flow-Launcher.Flow-Launcher` |
+| **Windows Terminal** | Terminal | [microsoft/terminal](https://github.com/microsoft/terminal) | `Microsoft.WindowsTerminal` |
+| **JetBrainsMono NF** | Font for bar and terminal | [nerdfonts.com](https://www.nerdfonts.com/) | `DEVCOM.JetBrainsMonoNerdFont` |
 
-### Where each config lands
+<details>
+<summary><b>Where each config lands</b></summary>
+
+<br>
 
 | Repo path | Installed to |
 |---|---|
@@ -89,62 +181,14 @@ Every replaced file becomes `<name>.bak-<timestamp>` next to the original. Nothi
 | `config/powershell/` | `Documents\WindowsPowerShell\` |
 | `config/flowlauncher/` | `%APPDATA%\FlowLauncher\Settings\` |
 
----
+`Documents` is resolved through `GetFolderPath('MyDocuments')`, so OneDrive redirection is handled.
 
-## Keybindings
+</details>
 
-Driven by [`config/whkd/whkdrc`](config/whkd/whkdrc).
+<details>
+<summary><b>Windhawk mods (11 enabled)</b></summary>
 
-| Keys | Action |
-|---|---|
-| <kbd>Alt</kbd> + <kbd>H/J/K/L</kbd> | Move focus left/down/up/right |
-| <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>H/J/K/L</kbd> | Move the focused window |
-| <kbd>Alt</kbd> + <kbd>,</kbd> / <kbd>.</kbd> | Cycle focus previous/next |
-| <kbd>Alt</kbd> + <kbd>+</kbd> / <kbd>-</kbd> | Resize horizontally |
-| <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>+</kbd> / <kbd>-</kbd> | Resize vertically |
-| <kbd>Alt</kbd> + <kbd>B</kbd> / <kbd>N</kbd> | Switch to bsp / scrolling layout |
-| <kbd>Alt</kbd> + <kbd>Wheel</kbd> | Scroll focus across columns (AutoHotkey) |
-| <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>Wheel</kbd> | Move window across columns |
-| <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>U</kbd> | Toggle German accent holds (hold A/O/U/S) |
-
----
-
-## Autostart
-
-The stack does **not** use the Startup folder. Explorer runs Startup items serially with a ~30s
-timeout each, and if it crashes partway through — which it does — everything behind the crash point
-silently never launches.
-
-Instead, a scheduled task named **Desktop WM Autostart** runs
-[`start-desktop.ps1`](config/autostart/start-desktop.ps1) on two triggers:
-
-| Trigger | Delay |
-|---|---|
-| At logon | 30s |
-| Winlogon event 1002 (Explorer crashed and restarted) | 20s |
-
-The script is idempotent — it starts only what is not already running, so repeated triggers cannot
-produce duplicates. Measured recovery from a killed shell with everything down: **32 seconds,
-unattended**.
-
-```powershell
-# what should be running
-Get-Process komorebi,whkd,yasb,AutoHotkey64,Rainmeter
-
-# autostart history
-Get-Content "$env:LOCALAPPDATA\komorebi\autostart.log" -Tail 20
-
-# force a run (safe, idempotent)
-schtasks /run /tn "Desktop WM Autostart"
-```
-
----
-
-## Windhawk mods
-
-Only mods that are **enabled** ship here. Settings for each are exported to
-[`config/windhawk/enabled-mods.json`](config/windhawk/enabled-mods.json) and written back to the
-registry by the installer.
+<br>
 
 `alt-tab-per-monitor` · `explorer-details-better-file-sizes` · `island-media-controls` ·
 `lock-keys-notifier` · `slick-window-arrangement` · `taskbar-dock-animation` ·
@@ -152,112 +196,152 @@ registry by the installer.
 `windows-11-notification-center-styler` · `windows-11-start-menu-styler` ·
 `windows-11-taskbar-styler`
 
-Windhawk mods are not on winget. The installer writes settings for mods you have already added
-through the Windhawk UI, and tells you which ones are missing. Browse them at
-[windhawk.net/mods](https://windhawk.net/mods).
+Disabled mods are deliberately not included. Windhawk mods aren't on winget — the installer writes
+settings for mods you've already added through the Windhawk UI and names any that are missing.
+Browse them at [windhawk.net/mods](https://windhawk.net/mods).
 
-This step writes to `HKLM` and therefore needs an elevated shell:
+This step writes to `HKLM`, so it needs elevation:
 
 ```powershell
 # from an admin PowerShell
 .\install.ps1 -Components windhawk -SkipPackages
 ```
 
----
-
-## Wallpaper gallery
-
-The Rainmeter slideshow widget cycles these. Full set in **[docs/gallery.md](docs/gallery.md)**.
-
-<p align="center">
-  <img src="config/rainmeter/skins/BigSur/%40Resources/Graphics/Slideshow/Sample/Off-White_Digital_Art.jpg" width="32%" alt="Off-White digital art" />
-  <img src="config/rainmeter/skins/BigSur/%40Resources/Graphics/Slideshow/Sample/Kanagawa_Great_Wave_Off.jpg" width="32%" alt="The Great Wave off Kanagawa" />
-  <img src="config/rainmeter/skins/BigSur/%40Resources/Graphics/Slideshow/Sample/Starry_Night_Van_Gogh.jpg" width="32%" alt="The Starry Night" />
-</p>
-
-To point the widget at your own folder, edit `PicturesFolder` in
-`Documents\Rainmeter\Skins\BigSur\Widgets\Slideshow\UserVariables.inc` and refresh the skin.
+</details>
 
 ---
 
-## Weather API keys
+## Before you push this to your own account
 
-The weather skins need your own API key — the ones here are placeholders, deliberately.
+Two things in here are deliberately blank, and a third is deliberately absent.
 
-| Skin | File (after install) | Placeholder | Get a key |
+**Weather API keys.** Both weather skins ship placeholders. Get your own:
+
+| Skin | File (after install) | Placeholder | Key from |
 |---|---|---|---|
-| Monterey | `Rainmeter\Skins\Monterey\@Resources\Variables\Weather.inc` | `YOUR_OPENWEATHERMAP_API_KEY` | [openweathermap.org/api](https://openweathermap.org/api) (free tier) |
-| BigSur | `Rainmeter\Skins\BigSur\Widgets\Weather\UserVariables.inc` | `YOUR_WEATHERCOM_API_KEY` | See the skin's own docs |
+| Monterey | `…\Skins\Monterey\@Resources\Variables\Weather.inc` | `YOUR_OPENWEATHERMAP_API_KEY` | [openweathermap.org/api](https://openweathermap.org/api) — free tier |
+| BigSur | `…\Skins\BigSur\Widgets\Weather\UserVariables.inc` | `YOUR_WEATHERCOM_API_KEY` | the skin's own docs |
 
-Set `City`, `Latitude` and `Longitude` in the same files — they default to London. Refresh the skin
-afterwards (right-click → Refresh skin).
+`City`, `Latitude` and `Longitude` live in the same files and default to London. Refresh the skin
+after editing (right-click → Refresh skin).
 
----
+**Your username.** Configs are committed with `__USERPROFILE__`, never a literal path.
+`Expand-UserPlaceholder` resolves it at install time and doubles backslashes for `.json` and
+`.yaml` only — a lone `\U` is an invalid escape that would break the file. If you fork this and
+commit a real path, you leak your username *and* break it for everyone else.
 
-## Not included
+**`notes.txt`.** The Rainmeter Notes widget reads `%USERPROFILE%\notes.txt`. The widget ships;
+its contents never will. It's in `.gitignore`.
 
-- **`notes.txt`** — the Rainmeter Notes widget reads `%USERPROFILE%\notes.txt`. The widget ships;
-  its contents do not. Create your own.
-- **API keys and location** — weather keys are placeholders and coordinates default to London.
-- **Flow Launcher history** — `History.json` and usage records are personal, excluded.
-- **Inactive Rainmeter suites** — only the suites actually enabled are here.
-- **komorebi `applications.json`** — upstream data, fetched fresh by `komorebic fetch-asc`.
+Also not included: Flow Launcher search history, inactive Rainmeter suites, and komorebi's
+`applications.json` — that last one is upstream data, fetched fresh by `komorebic fetch-asc`.
 
 ---
 
 ## Customising
 
-Re-run the wizard whenever you want to change sizing:
-
 ```powershell
 .\setup-wizard.ps1
 ```
 
-It asks for gaps, border width, accent colour, bar height, font size and family, then rescales
-Rainmeter positions from the `1920x1200` baseline to your display. It edits the deployed configs in
-your profile, not the repo, so your answers survive a `git pull` + re-install.
+Asks for gaps, border width, accent colour, bar height, font size and family, then rescales every
+Rainmeter skin position from the `1920x1200` baseline to your display. It edits the **deployed**
+configs in your profile, not the repo — so your answers survive `git pull` plus a re-install.
 
-Manual knobs:
-
-| Want to change | Edit |
+| To change | Edit |
 |---|---|
 | Keybindings | `%USERPROFILE%\.config\whkdrc` |
 | Bar widgets | `%USERPROFILE%\.config\yasb\config.yaml` |
-| Bar styling | `%USERPROFILE%\.config\yasb\styles.css` (CSS variables at the top) |
+| Bar styling | `%USERPROFILE%\.config\yasb\styles.css` — CSS variables at the top |
 | Gaps, borders, animation | `%USERPROFILE%\komorebi.json` |
 
-After editing komorebi or whkd config:
-
 ```powershell
-komorebic check                 # validate
-schtasks /run /tn "Desktop WM Autostart"
+komorebic check                            # validate config
+schtasks /run /tn "Desktop WM Autostart"   # restart what isn't running
 ```
 
 ---
 
 ## Troubleshooting
 
-**Workspace pills missing from the bar.** komorebi is usually fine — YASB is holding a dead pipe
-handle. `yasbc reload`. whkd is unrelated; it only handles hotkeys.
+<details>
+<summary><b>Workspace pills vanished from the bar</b></summary>
 
-**Nothing started after a reboot.** Check `Get-Content "$env:LOCALAPPDATA\komorebi\autostart.log" -Tail 20`.
-If it is empty, the task did not fire: `Get-ScheduledTaskInfo -TaskName "Desktop WM Autostart"`.
+<br>
 
-**komorebi will not start.** `komorebic check` validates config and reports where it is looking.
-Its own log is at `%LOCALAPPDATA%\Temp\komorebi_plaintext.log.<date>` — note the timestamps are UTC.
+komorebi is almost certainly fine — YASB is holding a dead pipe handle. `yasbc reload` rebuilds the
+listener. whkd is unrelated; it only handles hotkeys and has nothing to do with that widget.
 
-**Hotkeys dead.** Confirm `whkd` is running and that `%USERPROFILE%\.config\whkdrc` exists — whkd
-reads that path and no other.
+If it happens right after a start, check ordering: komorebi must come up **before** YASB, or YASB's
+`komorebic state` query fires before the socket is ready and logs
+`Komorebi state query timed out in 0.5 seconds`. The autostart launcher already orders them
+correctly.
 
-**Windhawk mods did nothing.** Settings only apply to mods already added in the Windhawk UI, and
-the shell needs restarting afterwards.
+</details>
+
+<details>
+<summary><b>Nothing started after a reboot</b></summary>
+
+<br>
+
+```powershell
+Get-Content "$env:LOCALAPPDATA\komorebi\autostart.log" -Tail 20
+Get-ScheduledTaskInfo -TaskName "Desktop WM Autostart"
+```
+
+Empty log means the task never fired. Did the shell crash?
+
+```powershell
+Get-WinEvent -LogName Application -MaxEvents 5 -FilterXPath "*[System[Provider[@Name='Microsoft-Windows-Winlogon'] and (EventID=1002)]]"
+```
+
+</details>
+
+<details>
+<summary><b>komorebi won't start</b></summary>
+
+<br>
+
+`komorebic check` validates the config and prints where it's looking. komorebi's own log is
+`%LOCALAPPDATA%\Temp\komorebi_plaintext.log.<date>` — **timestamps are UTC**, which trips people up
+when correlating against Event Viewer.
+
+A UTF-8 BOM on `komorebi.json` will also stop it loading. If you've edited it with a tool that adds
+one, strip it.
+
+</details>
+
+<details>
+<summary><b>Hotkeys dead</b></summary>
+
+<br>
+
+Confirm `whkd` is running and that `%USERPROFILE%\.config\whkdrc` exists — whkd reads that path and
+no other. A stale copy at `.config\whkd\whkdrc` is **not** read, and is a classic time-waster.
+
+</details>
+
+<details>
+<summary><b>Windhawk mods did nothing</b></summary>
+
+<br>
+
+Settings only apply to mods already added in the Windhawk UI, the write needs an elevated shell,
+and the shell must be restarted afterwards.
+
+</details>
 
 ---
 
 ## Credits
 
-Rainmeter skins and Windhawk mods are third-party work redistributed here for reproducibility.
-Authors and licences are listed in **[ATTRIBUTION.md](ATTRIBUTION.md)**.
+Rainmeter skins and wallpapers here are third-party work, redistributed for reproducibility.
+Authors and licences — read from each skin's own `[Metadata]` block, not assumed — are in
+**[ATTRIBUTION.md](ATTRIBUTION.md)**. Part of the BigSur suite is **CC BY-NC-ND**: it ships
+unmodified, and modified versions must not be redistributed.
 
-The scripts and configuration in this repo are MIT — see [LICENSE](LICENSE). That covers *my* work
-only, not the bundled third-party skins or the wallpapers, which keep their own terms.
+> **komorebi is not free for commercial use.** Running this desktop at work needs a
+> [commercial licence](https://lgug2z.com/software/komorebi). Nothing here grants one.
+
+Scripts and configuration in this repo are MIT — see [LICENSE](LICENSE). That covers my work only,
+not the bundled skins or the wallpapers, which keep their own terms.

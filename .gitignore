@@ -26,3 +26,6 @@ desktop.ini
 .DS_Store
 .vscode/
 .idea/
+
+# Working scratch for screenshots etc - never committed
+temp/
