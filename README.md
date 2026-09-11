@@ -18,6 +18,21 @@ One command installs it. A wizard sizes it to your screen. It survives an Explor
 
 ---
 
+## Screenshots
+
+**The desktop.** Rainmeter doing the heavy lifting — clock, calendar, system graphs, folder
+launcher, quick launch, reminders, weather — with the YASB bar pinned across the top.
+
+<img src="docs/assets/desktop.png" width="100%" alt="Full desktop: YASB bar across the top, a cmd.exe-styled info panel on the left, central system readouts, calendar and CPU/GPU/RAM graphs on the right, quick launch and reminders below." />
+
+**Tiled.** komorebi in `bsp`, three terminals — winfetch, btm, and a tree of this repo. Day to day
+the workspaces run `scrolling` with one column, PaperWM-style, so windows sit in a horizontal
+scroll and <kbd>Alt</kbd>+<kbd>Wheel</kbd> moves through them.
+
+<img src="docs/assets/tiling.png" width="100%" alt="Three terminal windows tiled by komorebi in bsp layout: winfetch system info, btm resource monitor, and a directory tree of the repo config folder." />
+
+---
+
 ## Quick setup
 
 ```powershell
