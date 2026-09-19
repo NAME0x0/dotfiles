@@ -34,6 +34,12 @@ Installed to `Documents\Rainmeter\Skins\`.
 My customisation lives in `config/rainmeter/Rainmeter.ini` (which skins load, and where) and in the
 skins' `UserVariables.inc` files — not in the skin logic itself.
 
+**One modification to skin logic:** Monterey's Notes widget (`Widgets/Notes/*.ini`) is patched to
+escape every line-break form, not just `\r\n`. Stock, text pasted with Unix-style `\n` breaks is
+written into `Notes.inc` as a raw newline; INI values are single-line, so everything after the
+first break silently disappears from the widget. Monterey is CC BY-NC-SA 4.0, which permits
+modification; the patched files remain under that licence.
+
 ---
 
 ## Wallpapers

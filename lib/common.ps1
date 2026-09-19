@@ -173,7 +173,16 @@ function Install-ConfigTree {
     if (-not $Merge) { Backup-Path -Path $Destination | Out-Null }
 
     New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-    Copy-Item -LiteralPath (Join-Path $Source '*') -Destination $Destination -Recurse -Force
+
+    # robocopy, not Copy-Item: "-LiteralPath src\*" treats the * as a literal
+    # filename, matches nothing and reports success, and Copy-Item's directory
+    # merge behaviour is inconsistent besides. /E copies the tree including empty
+    # folders and merges into what is already there without deleting extras.
+    robocopy $Source $Destination /E /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) {
+        Write-Err "copy failed (robocopy exit $LASTEXITCODE): $Source -> $Destination"
+        return $false
+    }
     Write-Ok (Split-Path $Destination -Leaf)
     return $true
 }

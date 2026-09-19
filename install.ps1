@@ -226,8 +226,31 @@ if ($Components -contains 'flowlauncher') {
 if ($Components -contains 'rainmeter') {
     Write-Step 'Rainmeter skins'
     $skinsDir = Join-Path $Documents 'Rainmeter\Skins'
+
+    # Some widgets keep the user's own data inside the skin folder - Monterey's
+    # notes, reminders and weather settings, BigSur's weather key. The repo ships
+    # empty templates for those, and a -Merge copy would overwrite real content
+    # with them. Stash any that already exist and put them back afterwards.
+    $userStateGlobs = @(
+        'Monterey\@Resources\Variables\*.inc'
+        '*\Widgets\*\UserVariables.inc'
+        '*\@Resources\WeatherComJSONVariables.inc'
+    )
+    $kept = @{}
+    if (Test-Path $skinsDir) {
+        foreach ($glob in $userStateGlobs) {
+            Get-ChildItem -Path (Join-Path $skinsDir $glob) -File -ErrorAction SilentlyContinue |
+                ForEach-Object { $kept[$_.FullName] = [IO.File]::ReadAllBytes($_.FullName) }
+        }
+    }
+
     Install-ConfigTree -Source (Join-Path $ConfigRoot 'rainmeter\skins') `
                        -Destination $skinsDir -Merge | Out-Null
+
+    foreach ($path in $kept.Keys) { [IO.File]::WriteAllBytes($path, $kept[$path]) }
+    if ($kept.Count) {
+        Write-Info "kept $($kept.Count) existing per-user skin file(s): notes, reminders, weather keys"
+    }
 
     # Rainmeter.ini carries window positions; the wizard rescales it afterwards.
     $rmIni = Join-Path $env:APPDATA 'Rainmeter\Rainmeter.ini'
