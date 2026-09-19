@@ -180,7 +180,7 @@ widgets:
         return_format: "string"
         hide_empty: false
       callbacks:
-        on_left: "exec powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File __USERPROFILE__\\.config\\yasb\\island_popup.ps1"
+        on_left: "exec __USERPROFILE__\\.config\\yasb\\island_toggle.exe"
         on_middle: "do_nothing"
         on_right: "do_nothing"
   battery:

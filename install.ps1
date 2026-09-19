@@ -182,6 +182,18 @@ if ($Components -contains 'yasb') {
     Write-Step 'YASB'
     Install-ConfigTree -Source (Join-Path $ConfigRoot 'yasb') `
                        -Destination (Join-Path $DotConfig 'yasb') | Out-Null
+
+    # The island's click handler is compiled here from island_toggle.cs rather
+    # than shipped as a binary. Without it the island click does nothing.
+    $builder = Join-Path $DotConfig 'yasb\build-island-toggle.ps1'
+    if (Test-Path $builder) {
+        try {
+            & $builder | Out-Null
+            Write-Ok 'island_toggle.exe (compiled from source)'
+        } catch {
+            Write-Warn "island_toggle.exe failed to compile: $($_.Exception.Message)"
+        }
+    }
 }
 
 if ($Components -contains 'autohotkey') {

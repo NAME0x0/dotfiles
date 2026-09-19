@@ -52,6 +52,19 @@ if (Test-ProcessRunning 'yasb') {
     Start-Process -FilePath "$env:ProgramFiles\YASB\yasb.exe" -WindowStyle Hidden
 }
 
+# The island panel stays resident so a click only has to show it. Starting it here
+# means the one-off startup cost is paid at login, not on your first click.
+# Checked through its named mutex, which exists exactly while a resident runs.
+$islandMutex = $null
+if ([System.Threading.Mutex]::TryOpenExisting('Local\YasbIslandResident', [ref]$islandMutex)) {
+    $islandMutex.Dispose()
+    Write-Log 'island panel already running'
+} else {
+    Write-Log 'starting island panel'
+    Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass',
+        '-WindowStyle', 'Hidden', '-File', "`"$env:USERPROFILE\.config\yasb\island_popup.ps1`""
+}
+
 # Matched on command line rather than process name so that other AutoHotkey v2
 # scripts do not count as this one already running.
 $scrollFocus = Join-Path $env:USERPROFILE '.config\komorebi\scroll_focus.ahk'

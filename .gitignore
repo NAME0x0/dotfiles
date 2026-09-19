@@ -29,3 +29,6 @@ desktop.ini
 
 # Working scratch for screenshots etc - never committed
 temp/
+
+# Compiled at install time from config/yasb/island_toggle.cs - never committed
+island_toggle.exe

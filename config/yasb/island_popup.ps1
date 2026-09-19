@@ -1,22 +1,90 @@
+<#
+    island_popup.ps1 - the expanded "dynamic island" panel for the YASB bar.
+
+    Resident: builds its window once, then shows/hides it each time the island is
+    clicked. YASB's click runs island_toggle.exe, which signals the named event
+    below and exits; paying PowerShell + WPF startup on every click is what made
+    the old one-process-per-click popup take about a second.
+
+      -ShowOnStart   show immediately (used when a click finds no resident running)
+#>
+param([switch]$ShowOnStart)
+
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'SilentlyContinue'
+
+# --- single instance ----------------------------------------------------------
+# One resident per session. Starting this script again - the old YASB callback,
+# or island_toggle.exe falling back - just toggles the running instance. Kernel
+# objects die with their process, so unlike the old lock file there is no stale
+# state after a crash and no recycled PID to kill by mistake.
+$createdNew = $false
+$script:instanceMutex = New-Object System.Threading.Mutex($true, 'Local\YasbIslandResident', [ref]$createdNew)
+if (-not $createdNew) {
+    try { [void][System.Threading.EventWaitHandle]::OpenExisting('Local\YasbIslandToggle').Set() } catch {}
+    exit
+}
+# Created now, before the slow startup, so a click during startup is queued
+# (auto-reset events stay signalled) rather than lost.
+$script:toggleEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, 'Local\YasbIslandToggle')
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
 
-# --- single-instance lock ---------------------------------------------------
-$lockFile = Join-Path $env:TEMP 'yasb_island.lock'
-if (Test-Path $lockFile) {
-    try {
-        $existingPid = [int](Get-Content $lockFile -ErrorAction Stop)
-        Stop-Process -Id $existingPid -Force -ErrorAction SilentlyContinue
-    } catch {}
-    Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
-    exit
+# Show/hide on each toggle signal. C#, not PowerShell: the wait completes on a
+# thread-pool thread, where a PowerShell scriptblock has no runspace to run in,
+# so this marshals onto the WPF dispatcher itself.
+if (-not ('IslandSignal' -as [type])) {
+    Add-Type -ReferencedAssemblies @(
+        [System.Windows.Window].Assembly.Location                   # PresentationFramework
+        [System.Windows.UIElement].Assembly.Location                # PresentationCore
+        [System.Windows.Threading.Dispatcher].Assembly.Location     # WindowsBase
+        [System.Reflection.Assembly]::Load('System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089').Location
+    ) -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Windows;
+
+public static class IslandSignal {
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr hWnd, out int pid);
+
+    // Set from PowerShell whenever the window hides.
+    public static DateTime LastHidden = DateTime.MinValue;
+    // The app that had focus when the island was clicked - what "active task" reports.
+    public static int PreviousForeground;
+
+    static EventWaitHandle toggle;
+    static RegisteredWaitHandle registration;   // held so it isn't collected
+
+    public static void Listen(string eventName, Window window) {
+        toggle = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
+        registration = ThreadPool.RegisterWaitForSingleObject(toggle, delegate {
+            window.Dispatcher.BeginInvoke(new Action(delegate { Toggle(window); }));
+        }, null, -1, false);
+    }
+
+    public static void Toggle(Window window) {
+        if (window.IsVisible) { window.Hide(); return; }
+
+        // Clicking the island while the panel is open deactivates the panel first,
+        // which already hid it. The toggle that click sends means "close", so a
+        // signal arriving right after an auto-hide must not reopen it.
+        if ((DateTime.UtcNow - LastHidden).TotalMilliseconds < 400) return;
+
+        int pid;
+        GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        PreviousForeground = pid;
+
+        window.Show();
+        window.Activate();
+    }
 }
-Set-Content $lockFile $PID
+'@
+}
 
 # --- helpers ---------------------------------------------------------------
 $weatherCache = Join-Path $env:TEMP 'yasb_weather_cache.json'
@@ -32,35 +100,170 @@ function Read-WeatherCache {
     return $null
 }
 
-function Get-Weather-Sync {
-    # synchronous, blocks ~3-5s if cache cold
-    try {
-        $out = & powershell -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot\weather.ps1" 2>$null
-        if ($out) {
-            $raw = if ($out -is [array]) { $out -join '' } else { "$out" }
-            return $raw | ConvertFrom-Json
-        }
-    } catch {}
-    return $null
-}
+# --- background data gatherer ------------------------------------------------
+# Everything slow runs here, on its own runspace: process lookups, network,
+# weather, and the one-off C# compile for the native calls. The UI thread only
+# copies finished values out of $shared, so the window paints and responds while
+# data is still being collected. This used to run on the UI thread - WMI took
+# ~3 s on the first pass and ~1.3 s on every 1 s tick, freezing the fade-in and
+# every button for as long as the popup was open.
+$shared = [hashtable]::Synchronized(@{
+    stop = $false; gen = 0; pulse = $null; task = $null; now = $null
+    weather = $null; weatherGen = 0; fgPid = 0
+    paused = (-not $ShowOnStart)    # idle while the panel is hidden
+    wake   = $false                 # set on show: gather now, don't wait out the interval
+    # Blocks the paused gatherer in the kernel instead of a polling loop, which
+    # cost ~2% of a core just to wait. Set = run, reset = paused.
+    resume = New-Object System.Threading.ManualResetEvent([bool]$ShowOnStart)
+})
 
-function Get-SystemPulse {
-    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
-    $memPct = if ($os) { [math]::Round((1 - $os.FreePhysicalMemory / $os.TotalVisibleMemorySize) * 100) } else { 0 }
-    $memUsed = if ($os) { [math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / 1MB, 1) } else { 0 }
-    $memTotal = if ($os) { [math]::Round($os.TotalVisibleMemorySize / 1MB, 1) } else { 0 }
-    $cpuPct = try { [math]::Round((Get-CimInstance Win32_Processor | Measure-Object -Property LoadPercentage -Average).Average) } catch { 0 }
-    $disk = Get-PSDrive -Name C -ErrorAction SilentlyContinue
-    $diskPct = if ($disk) { [math]::Round($disk.Used / ($disk.Used + $disk.Free) * 100) } else { 0 }
-    $diskUsedGB = if ($disk) { [math]::Round($disk.Used / 1GB) } else { 0 }
-    $diskTotalGB = if ($disk) { [math]::Round(($disk.Used + $disk.Free) / 1GB) } else { 0 }
-    $netAdapter = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object Status -eq 'Up' | Select-Object -First 1
-    $netName = if ($netAdapter) { $netAdapter.Name } else { 'OFFLINE' }
-    $netLink = if ($netAdapter) { $netAdapter.LinkSpeed } else { '--' }
-    [pscustomobject]@{
-        cpuPct = $cpuPct; memPct = $memPct; memUsed = $memUsed; memTotal = $memTotal
-        diskPct = $diskPct; diskUsedGB = $diskUsedGB; diskTotalGB = $diskTotalGB
-        netName = $netName; netLink = $netLink
+$gatherer = {
+    param($shared, $scriptRoot, $fetchWeatherNow, $ownPid)
+    $ErrorActionPreference = 'SilentlyContinue'
+
+    if (-not ('IslandNative' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+public static class IslandNative {
+    [StructLayout(LayoutKind.Sequential)]
+    struct FILETIME { public uint Low; public uint High; }
+
+    [DllImport("kernel32.dll")]
+    static extern bool GetSystemTimes(out FILETIME idle, out FILETIME kernel, out FILETIME user);
+
+    [StructLayout(LayoutKind.Sequential)]
+    class MEMORYSTATUSEX {
+        public uint  dwLength = (uint)Marshal.SizeOf(typeof(MEMORYSTATUSEX));
+        public uint  dwMemoryLoad;
+        public ulong ullTotalPhys, ullAvailPhys, ullTotalPageFile, ullAvailPageFile;
+        public ulong ullTotalVirtual, ullAvailVirtual, ullAvailExtendedVirtual;
+    }
+
+    [DllImport("kernel32.dll")]
+    static extern bool GlobalMemoryStatusEx([In, Out] MEMORYSTATUSEX m);
+
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr hWnd, out int pid);
+
+    static ulong lastIdle, lastTotal;
+    static ulong Join(FILETIME f) { return ((ulong)f.High << 32) | f.Low; }
+
+    // Busy CPU % since the previous call. The first call primes the baseline and returns -1.
+    public static int CpuPercent() {
+        FILETIME i, k, u;
+        if (!GetSystemTimes(out i, out k, out u)) return -1;
+        ulong idle = Join(i), total = Join(k) + Join(u);   // kernel time already includes idle
+        ulong dIdle = idle - lastIdle, dTotal = total - lastTotal;
+        bool primed = lastTotal != 0;
+        lastIdle = idle; lastTotal = total;
+        if (!primed || dTotal == 0) return -1;
+        return (int)Math.Round(100.0 * (dTotal - dIdle) / dTotal);
+    }
+
+    // { load %, total bytes, available bytes }
+    public static ulong[] Memory() {
+        var m = new MEMORYSTATUSEX();
+        if (!GlobalMemoryStatusEx(m)) return new ulong[] { 0, 0, 0 };
+        return new ulong[] { m.dwMemoryLoad, m.ullTotalPhys, m.ullAvailPhys };
+    }
+
+    public static int ForegroundPid() {
+        int pid;
+        GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        return pid;
+    }
+}
+'@
+    }
+
+    $null = [IslandNative]::CpuPercent()          # prime the CPU baseline
+    Start-Sleep -Milliseconds 250                 # ...so the first reading covers a real interval
+    $nextWeather = if ($fetchWeatherNow) { [datetime]::MinValue } else { (Get-Date).AddMinutes(10) }
+    $mediaNames  = 'Spotify', 'vlc', 'AIMP', 'foobar2000', 'wmplayer'
+
+    while (-not $shared.stop) {
+        if ($shared.paused) { [void]$shared.resume.WaitOne(5000); continue }
+        $shared.wake = $false
+
+        # -- system pulse --
+        $cpu  = [IslandNative]::CpuPercent(); if ($cpu -lt 0) { $cpu = 0 }
+        $mem  = [IslandNative]::Memory()
+        $memTotal = [double]$mem[1]; $memUsed = $memTotal - [double]$mem[2]
+        $drive = [System.IO.DriveInfo]::new('C')
+        $diskTotal = [double]$drive.TotalSize; $diskUsed = $diskTotal - [double]$drive.TotalFreeSpace
+        # Prefer the adapter that holds a default gateway - the one actually carrying
+        # traffic. Enumeration order is arbitrary: virtual adapters (VirtualBox
+        # host-only, Hyper-V switch) are also "Up" and can come first.
+        $up = [System.Net.NetworkInformation.NetworkInterface]::GetAllNetworkInterfaces() |
+            Where-Object { $_.OperationalStatus -eq 'Up' -and
+                           $_.NetworkInterfaceType -ne 'Loopback' -and $_.NetworkInterfaceType -ne 'Tunnel' }
+        $nic = $up | Where-Object {
+                   $_.GetIPProperties().GatewayAddresses |
+                       Where-Object { $_.Address.ToString() -notin '0.0.0.0', '::' }
+               } | Select-Object -First 1
+        if (-not $nic) { $nic = $up | Select-Object -First 1 }
+        $link = if (-not $nic) { '--' }
+                elseif ($nic.Speed -ge 1e9) { '{0:0.#} Gbps' -f ($nic.Speed / 1e9) }
+                else { '{0:0.#} Mbps' -f ($nic.Speed / 1e6) }
+
+        $shared.pulse = [pscustomobject]@{
+            cpuPct      = $cpu
+            memPct      = [int]$mem[0]
+            memUsed     = [math]::Round($memUsed / 1GB, 1)
+            memTotal    = [math]::Round($memTotal / 1GB, 1)
+            diskPct     = if ($diskTotal) { [math]::Round($diskUsed / $diskTotal * 100) } else { 0 }
+            diskUsedGB  = [math]::Round($diskUsed / 1GB)
+            diskTotalGB = [math]::Round($diskTotal / 1GB)
+            netName     = if ($nic) { $nic.Name } else { 'OFFLINE' }
+            netLink     = $link
+        }
+
+        # -- active task: whatever was focused, ignoring this popup itself --
+        # Prefer the app captured at click time; once the panel is open it is itself
+        # the foreground window, so a live lookup would only ever find this process.
+        $fg = [IslandSignal]::PreviousForeground
+        if (-not $fg) { $fg = [IslandNative]::ForegroundPid() }
+        if ($fg -and $fg -ne $ownPid) { $shared.fgPid = $fg }
+        $proc = if ($shared.fgPid) { Get-Process -Id $shared.fgPid -ErrorAction SilentlyContinue }
+        $up = if ($proc -and $proc.StartTime) {
+            $u = (Get-Date) - $proc.StartTime
+            '{0:D2}:{1:D2}:{2:D2}' -f [int]$u.TotalHours, $u.Minutes, $u.Seconds
+        } else { '--:--:--' }
+        $shared.task = [pscustomobject]@{
+            pid   = $shared.fgPid
+            name  = if ($proc) { $proc.ProcessName } else { '-' }
+            title = if ($proc -and $proc.MainWindowTitle) { $proc.MainWindowTitle } else { 'No active window' }
+            mem   = if ($proc) { [math]::Round($proc.WorkingSet64 / 1MB) } else { 0 }
+            up    = $up
+        }
+
+        # -- now playing --
+        $np = [pscustomobject]@{ source = 'IDLE'; title = 'No media playing' }
+        foreach ($mp in $mediaNames) {
+            $mproc = Get-Process -Name $mp -ErrorAction SilentlyContinue |
+                     Where-Object { $_.MainWindowTitle -and $_.MainWindowTitle -ne $mp }
+            if ($mproc) { $np = [pscustomobject]@{ source = $mp.ToUpper(); title = $mproc[0].MainWindowTitle }; break }
+        }
+        $shared.now = $np
+        $shared.gen++
+
+        # -- weather: on open only if the cache was empty, then every 10 min --
+        if ((Get-Date) -ge $nextWeather) {
+            $out = & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $scriptRoot 'weather.ps1') 2>$null
+            if ($out) {
+                $raw = if ($out -is [array]) { $out -join '' } else { "$out" }
+                $w = $raw | ConvertFrom-Json
+                if ($w) { $shared.weather = $w; $shared.weatherGen++ }
+            }
+            $nextWeather = (Get-Date).AddMinutes(10)
+        }
+
+        # 2 s between passes, in short slices so hide/show/stop take effect promptly
+        for ($s = 0; $s -lt 20 -and -not ($shared.stop -or $shared.paused -or $shared.wake); $s++) {
+            Start-Sleep -Milliseconds 100
+        }
     }
 }
 
@@ -77,36 +280,6 @@ function Get-Histogram($pct) {
 
 function Get-StatColor($pct) {
     if ($pct -ge 90) { '#FC3D21' } elseif ($pct -ge 50) { '#D4A04A' } else { '#7A9E7A' }
-}
-
-function Get-ActiveTask {
-    if (-not ('Win32_GFW2' -as [type])) {
-        Add-Type -Namespace Win32 -Name GFW2 -MemberDefinition @"
-            [System.Runtime.InteropServices.DllImport("user32.dll")]
-            public static extern System.IntPtr GetForegroundWindow();
-            [System.Runtime.InteropServices.DllImport("user32.dll")]
-            public static extern int GetWindowThreadProcessId(System.IntPtr hWnd, out int lpdwProcessId);
-"@
-    }
-    $apid = 0
-    $null = [Win32.GFW2]::GetWindowThreadProcessId([Win32.GFW2]::GetForegroundWindow(), [ref]$apid)
-    $proc = Get-Process -Id $apid -ErrorAction SilentlyContinue
-    $name = if ($proc) { $proc.ProcessName } else { '-' }
-    $title = if ($proc -and $proc.MainWindowTitle) { $proc.MainWindowTitle } else { 'No active window' }
-    $mem = if ($proc) { [math]::Round($proc.WorkingSet64 / 1MB) } else { 0 }
-    $up = if ($proc) {
-        $u = (Get-Date) - $proc.StartTime
-        '{0:D2}:{1:D2}:{2:D2}' -f [int]$u.TotalHours, $u.Minutes, $u.Seconds
-    } else { '--:--:--' }
-    [pscustomobject]@{ pid = $apid; name = $name; title = $title; mem = $mem; up = $up }
-}
-
-function Get-NowPlaying {
-    foreach ($mp in @('Spotify','vlc','AIMP','foobar2000','wmplayer')) {
-        $proc = Get-Process -Name $mp -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowTitle -and $_.MainWindowTitle -ne $mp }
-        if ($proc) { return [pscustomobject]@{ source = $mp.ToUpper(); title = $proc[0].MainWindowTitle } }
-    }
-    [pscustomobject]@{ source = 'IDLE'; title = 'No media playing' }
 }
 
 function Get-Pomodoro {
@@ -145,6 +318,12 @@ $weatherStale = ($null -eq $weather)
 if (-not $weather) {
     $weather = [pscustomobject]@{ icon='-'; temp='--'; condition='Loading'; min_temp='--'; max_temp='--'; humidity='--'; location='Detecting'; wind='--' }
 }
+
+# Start gathering now so it overlaps the XAML build instead of following it. The
+# foreground window at this moment is still the app you clicked away from.
+$gatherPs = [powershell]::Create()
+$null = $gatherPs.AddScript($gatherer).AddArgument($shared).AddArgument($PSScriptRoot).AddArgument($weatherStale).AddArgument($PID)
+$null = $gatherPs.BeginInvoke()
 
 $weekNum = [System.Globalization.CultureInfo]::InvariantCulture.Calendar.GetWeekOfYear(
     $now, [System.Globalization.CalendarWeekRule]::FirstDay, [System.DayOfWeek]::Monday)
@@ -538,9 +717,21 @@ function Update-Clock {
     }
 }
 
-function Update-System {
-    # expensive: WMI/Get-Process — runs at low frequency
-    $sp = Get-SystemPulse
+$script:appliedGen        = -1
+$script:appliedWeatherGen = 0
+
+function Apply-Weather {
+    if ($shared.weatherGen -eq $script:appliedWeatherGen) { return }
+    $script:appliedWeatherGen = $shared.weatherGen
+    Update-Weather $shared.weather
+}
+
+function Apply-System {
+    # cheap: copies whatever the background gatherer last produced, and only if it's new
+    if ($shared.gen -eq $script:appliedGen -or -not $shared.pulse) { return }
+    $script:appliedGen = $shared.gen
+
+    $sp = $shared.pulse
     $el.CpuHist.Text = (Get-Histogram $sp.cpuPct)
     $el.CpuHist.Foreground = (Get-StatColor $sp.cpuPct)
     $el.CpuPct.Text = "$($sp.cpuPct)"
@@ -555,11 +746,11 @@ function Update-System {
     $el.NetName.Text = $sp.netName
     $el.NetLink.Text = $sp.netLink
 
-    $np = Get-NowPlaying
+    $np = $shared.now
     $el.NowSrc.Text = $np.source
     $el.NowTitle.Text = $np.title
 
-    $at = Get-ActiveTask
+    $at = $shared.task
     $el.ActPid.Text = "PID $($at.pid)"
     $el.ActName.Text = $at.name
     $el.ActTitle.Text = $at.title
@@ -584,8 +775,9 @@ $el.PomoTime.Text = '25:00'; $el.PomoBtnText.Text = 'START'
 $el.PomoBtn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#7A9E7A')
 
 # --- wire buttons -----------------------------------------------------------
-$el.CloseBtn.Add_MouseLeftButtonUp({ $window.Close() })
-$window.Add_Deactivated({ $window.Close() })
+# Hide rather than close: the process stays resident for the next click.
+$el.CloseBtn.Add_MouseLeftButtonUp({ $window.Hide() })
+$window.Add_Deactivated({ $window.Hide() })
 
 $el.PomoBtn.Add_MouseLeftButtonUp({
     if (Test-Path $pomoFile) {
@@ -622,58 +814,53 @@ Apply-Toggle 'TogScroll' 'scroll'
 # --- timers -----------------------------------------------------------------
 $clockTimer = New-Object System.Windows.Threading.DispatcherTimer
 $clockTimer.Interval = [timespan]::FromMilliseconds(100)
-$clockTimer.Add_Tick({ Update-Clock })
-$clockTimer.Start()
+$clockTimer.Add_Tick({ Update-Clock })          # started/stopped with the panel's visibility
 
+# Copies gatherer output onto the UI. Cheap, so it can check often; the data itself
+# refreshes every 2 s in the background.
 $systemTimer = New-Object System.Windows.Threading.DispatcherTimer
-$systemTimer.Interval = [timespan]::FromMilliseconds(1000)
-$systemTimer.Add_Tick({ Update-System })
-$systemTimer.Start()
+$systemTimer.Interval = [timespan]::FromMilliseconds(250)
+$systemTimer.Add_Tick({ Apply-System; Apply-Weather })   # likewise
 
-$weatherTimer = New-Object System.Windows.Threading.DispatcherTimer
-$weatherTimer.Interval = [timespan]::FromMinutes(10)
-$weatherTimer.Add_Tick({
-    $w = Get-Weather-Sync
-    if ($w) { Update-Weather $w }
-})
-$weatherTimer.Start()
-
-# --- position popup ---------------------------------------------------------
-$window.Add_SourceInitialized({
+# --- position ---------------------------------------------------------------
+# Centre under the bar. SizeChanged covers the first show, where the width is only
+# known after layout; later shows re-centre from the settled width.
+function Set-PanelPosition {
     $screen = [System.Windows.SystemParameters]::WorkArea
-    $window.Left = ($screen.Width - $window.ActualWidth) / 2
+    if ($window.ActualWidth -gt 0) { $window.Left = ($screen.Width - $window.ActualWidth) / 2 }
     $window.Top = 48
-})
+}
+$window.Add_SizeChanged({ Set-PanelPosition })
 
-# --- run open animation + first system pulse when window rendered -----------
-$window.Add_Loaded({
-    $sb = $window.Resources['OpenAnim']
-    $sb.Begin($window)
-    Update-Clock
-    # dispatch system data gather to next idle frame so window paints first
-    [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke(
-        [System.Windows.Threading.DispatcherPriority]::Background,
-        [Action]{ Update-System }
-    ) | Out-Null
-    if ($weatherStale) {
-        [System.Windows.Threading.Dispatcher]::CurrentDispatcher.BeginInvoke(
-            [System.Windows.Threading.DispatcherPriority]::Background,
-            [Action]{
-                $w = Get-Weather-Sync
-                if ($w) { Update-Weather $w }
-            }
-        ) | Out-Null
+# --- show / hide ------------------------------------------------------------
+$openAnim = $window.Resources['OpenAnim']
+$window.Add_IsVisibleChanged({
+    if ($window.IsVisible) {
+        Set-PanelPosition
+        $openAnim.Begin($window, $true)                  # controllable, so hide can stop it
+        Update-Clock
+        Apply-System; Apply-Weather                      # last-known values, instantly
+        $clockTimer.Start(); $systemTimer.Start()
+        $shared.paused = $false; $shared.wake = $true    # ...and a fresh pass straight away
+        [void]$shared.resume.Set()
+    } else {
+        $clockTimer.Stop(); $systemTimer.Stop()
+        $shared.paused = $true
+        [void]$shared.resume.Reset()
+        $openAnim.Stop($window)                          # drop the held Opacity=1 so the next show fades in
+        [IslandSignal]::LastHidden = [DateTime]::UtcNow
     }
 })
 
-$window.Add_KeyDown({
-    if ($_.Key -eq 'Escape') { $window.Close() }
-})
-$window.Add_Closed({
-    $clockTimer.Stop()
-    $systemTimer.Stop()
-    $weatherTimer.Stop()
-    Remove-Item $lockFile -Force -ErrorAction SilentlyContinue
-})
+$window.Add_KeyDown({ if ($_.Key -eq 'Escape') { $window.Hide() } })
 
-[void]$window.ShowDialog()
+# Create the window handle and lay it out now, so a click only has to show it.
+[void](New-Object System.Windows.Interop.WindowInteropHelper $window).EnsureHandle()
+$window.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
+$window.Arrange([System.Windows.Rect]::new($window.DesiredSize))
+
+[IslandSignal]::Listen('Local\YasbIslandToggle', $window)
+if ($ShowOnStart) { [IslandSignal]::Toggle($window) }
+
+# Resident: pump messages until the process is ended. Hiding never exits.
+[System.Windows.Threading.Dispatcher]::Run()
