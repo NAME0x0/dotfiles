@@ -40,6 +40,7 @@ bars:
         "apps",
         "shortcuts",
         "window_switcher",
+        "notes",
         "media"
       ]
       center: [
@@ -47,7 +48,6 @@ bars:
         "island_visualizer",
       ]
       right: [
-        "notes",
         "claude_usage",
         "claude_hover",
         "codex_usage",
@@ -183,7 +183,7 @@ widgets:
         on_middle: "do_nothing"
         on_right: "toggle_label"
       max_field_size:
-        label: 40
+        label: 28          # keeps the left group inside its fixed column
         label_alt: 60
       show_thumbnail: false
       controls_only: false
@@ -391,7 +391,9 @@ widgets:
   wifi:
     type: "yasb.wifi.WifiWidget"
     options:
-      label: "<span>{wifi_icon}</span> \"WIFI\" {wifi_name}"
+      # Network name only on right-click: keeps the right group short enough for
+      # the island to stay centered (and the SSID out of screenshots).
+      label: "<span>{wifi_icon}</span> \"WIFI\""
       label_alt: "\"WIFI\" {wifi_name} {wifi_strength}%"
       update_interval: 5000
       callbacks:
@@ -435,7 +437,7 @@ widgets:
         round_corners: true
         round_corners_type: "normal"
         border_color: "#2a2a2c"
-        alignment: "right"
+        alignment: "left"
         direction: "down"
         offset_top: 6
         offset_left: 0

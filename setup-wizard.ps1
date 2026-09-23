@@ -145,9 +145,14 @@ if (-not (Test-Path $YasbCss)) {
     # Only the global rule's size, so per-widget overrides stay intact.
     $css = $css -replace '(?m)(^\*\s*\{[^}]*?font-size:\s*)\d+px', "`${1}${fontSize}px"
     $css = $css -replace '"JetBrainsMono NF"', "`"$fontName`""
+    # Centering guard: equal side columns keep the island dead center. Sized from
+    # the screen width (logical px - this process is not DPI-aware) minus the bar
+    # padding (2 x 15) and room for the island + visualizer (~330).
+    $sideWidth = [math]::Max(0, [math]::Floor(($screen.Width - 30 - 330) / 2))
+    $css = $css -replace '(\.container-right\s*\{\s*min-width:\s*)\d+px', "`${1}${sideWidth}px"
 
     Set-Content -Path $YasbCss -Value $css -Encoding utf8 -NoNewline
-    Write-Ok "accent $accent, font $fontName ${fontSize}px"
+    Write-Ok "accent $accent, font $fontName ${fontSize}px, side columns ${sideWidth}px"
 }
 
 # ---------------------------------------------------------------- rainmeter ---

@@ -39,6 +39,16 @@
     padding: 0px 6px 0 3px;
 }
 
+/* ===================== CENTERING GUARD =====================
+   YASB lays left/center/right out as a 3-column grid sized by content, so the
+   island only sits dead center while both side groups are equally wide. Giving
+   the side columns the same minimum width makes that true regardless of what
+   they hold. 1920 - 2*15px bar padding - ~330px for island + visualizer = 2*780. */
+.container-left,
+.container-right {
+    min-width: 780px;
+}
+
 /* ===================== HOME ===================== */
 
 .home-widget {
