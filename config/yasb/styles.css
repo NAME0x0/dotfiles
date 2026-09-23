@@ -92,6 +92,9 @@
     color: var(--subtext);
     height: 28px;
     width: 18px;
+    /* Replaces the widget's removed `animation: true`: the active pill grows
+       from a 10px dot to a 24px bar instead of snapping. */
+    transition: all 200ms ease-out;
 }
 .komorebi-workspaces .ws-btn:hover {
     color: var(--text);
@@ -164,6 +167,8 @@
 }
 .media-widget .label {
     color: var(--subtext);
+    /* was label_shadow {color: black, radius: 3, offset: [1, 1]} in config.yaml */
+    text-shadow: 1px 1px 3px black;
 }
 .media-widget .btn.play,
 .media-widget .btn.prev,
@@ -410,4 +415,545 @@
     font-size: 13px;
     margin-bottom: 10px;
     color: var(--subtext);
+}
+
+/* ===================== ADAPTIVE (islands) =====================
+   YASB 2.0.7 adaptive style: a thin rail along the top edge, with each widget
+   group (left / center / right) hanging from it as its own island. Gaps between
+   islands are transparent. Revert: drop `style: "adaptive"` from config.yaml. */
+.yasb-bar.adaptive {
+    border: none;                        /* a CSS border can't follow the island shape */
+    background-color: var(--base);
+    -qproperty-railheight: 3;
+    -qproperty-islandradius: 16;         /* max (40 - 3) / 2 = 18 on a 40px bar */
+    -qproperty-grouppadding: 10;
+    -qproperty-edgeradius: 0;            /* 0: any radius extends the bar window below the bar, and blur_effect frosts that strip over the Rainmeter skins */
+    -qproperty-borderwidth: 1;           /* hairline that does follow the shape */
+    -qproperty-bordercolor: #2a2a2c;
+}
+
+/* Each group is now one island, so the per-widget pills would draw a shape inside
+   a shape. Make them transparent; hover states still highlight. */
+.yasb-bar.adaptive .home-widget,
+.yasb-bar.adaptive .komorebi-workspaces,
+.yasb-bar.adaptive .media-widget,
+.yasb-bar.adaptive .island-widget,
+.yasb-bar.adaptive .wifi-widget .widget-container,
+.yasb-bar.adaptive .volume-widget,
+.yasb-bar.adaptive .battery-widget .widget-container,
+.yasb-bar.adaptive .power-menu-widget {
+    background-color: transparent;
+    border: none;
+}
+
+/* ===================== ISLAND VISUALIZER =====================
+   Audio bars inside the center island. Amber at the base to NASA orange at the
+   peaks, so loud passages read hotter. */
+.audio-visualizer-widget {
+    padding: 0;
+    margin: 0 8px 0 0;
+}
+.audio-visualizer-widget .widget-container {
+    padding: 0;
+    margin: 0;
+}
+.audio-visualizer-widget .audio-visualizer-canvas {
+    -qproperty-fillbrush: linear-gradient(to top, #D4A04A, #FC3D21);
+}
+
+/* ===================== KOMOREBI LAYOUT ===================== */
+
+.komorebi-active-layout {
+    padding: 0 2px;
+    margin: 0 0 0 6px;
+}
+.komorebi-active-layout .label {
+    color: var(--subtext);
+    font-size: 14px;
+    padding: 0 4px;
+}
+.komorebi-active-layout .label:hover {
+    color: var(--text);
+}
+.komorebi-layout-menu {
+    background-color: var(--mantle);
+}
+.komorebi-layout-menu .menu-item {
+    padding: 8px 18px 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+}
+.komorebi-layout-menu .menu-item:hover {
+    background-color: var(--surface);
+}
+.komorebi-layout-menu .menu-item-icon {
+    color: var(--orange);
+    font-size: 15px;
+}
+.komorebi-layout-menu .menu-item-text {
+    padding-left: 6px;
+    font-size: 12px;
+}
+.komorebi-layout-menu .separator {
+    max-height: 1px;
+    background-color: var(--border);
+}
+
+/* ===================== WINDOW SWITCHER ===================== */
+
+.window-switcher-widget {
+    padding: 0 2px;
+    margin: 0 2px;
+}
+.window-switcher-widget .label {
+    font-size: 15px;
+    color: var(--subtext);
+    padding: 0 4px;
+}
+.window-switcher-widget .label:hover {
+    color: var(--text);
+}
+.window-switcher-popup {
+    background-color: var(--mantle);
+    padding: 10px;
+}
+.window-switcher-popup .item {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    margin: 5px;
+    padding: 10px;
+}
+.window-switcher-popup .item:hover {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+}
+.window-switcher-popup .item.active {
+    background-color: var(--surface-hover);
+    border: 1px solid var(--orange);
+}
+.window-switcher-popup .title {
+    padding: 10px 10px 4px 10px;
+    margin-top: 8px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 600;
+    border-top: 1px solid var(--border);
+}
+
+/* ===================== NOTES ===================== */
+
+.notes-widget {
+    padding: 0 4px;
+}
+.notes-widget .icon,
+.notes-widget .label {
+    color: var(--subtext);
+    font-size: 12px;
+}
+.notes-widget .icon { font-size: 14px; }
+.notes-widget .label:hover,
+.notes-widget .icon:hover { color: var(--text); }
+.notes-menu {
+    min-width: 380px;
+    max-width: 380px;
+    min-height: 460px;
+    background-color: var(--mantle);
+}
+.notes-menu.floating {
+    min-width: 640px;
+    max-width: 640px;
+    min-height: 480px;
+    max-height: 480px;
+}
+.notes-menu .notes-header {
+    background-color: transparent;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+}
+.notes-menu .notes-header .header-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text);
+}
+.notes-menu .notes-header .float-button,
+.notes-menu .notes-header .close-button {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+    font-size: 13px;
+    padding: 2px 6px;
+}
+.notes-menu .notes-header .float-button:hover,
+.notes-menu .notes-header .close-button:hover { color: var(--text); }
+.notes-menu .scroll-area { background-color: transparent; border: none; }
+.notes-menu .note-item {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 4px 10px;
+    padding: 8px 10px;
+}
+.notes-menu .note-item:hover { background-color: var(--surface-hover); }
+.notes-menu .title       { color: var(--text); font-size: 12px; }
+.notes-menu .date        { color: var(--subtext); font-size: 10px; }
+.notes-menu .empty-list  { color: var(--subtext); font-size: 12px; padding: 16px; }
+.notes-menu .note-input {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    margin: 8px 10px;
+    padding: 6px 8px;
+}
+.notes-menu .note-input:focus { border: 1px solid var(--orange); }
+.notes-menu .add-button,
+.notes-menu .cancel-button {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    margin: 0 10px 10px 10px;
+    padding: 6px 12px;
+}
+.notes-menu .add-button { background-color: var(--orange); border: none; color: var(--base); }
+.notes-menu .add-button:hover { background-color: #ff5a40; }
+.notes-menu .cancel-button:hover { background-color: var(--surface-hover); }
+.notes-menu .delete-button,
+.notes-menu .copy-button,
+.notes-menu .input-copy-button {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+    font-size: 12px;
+    padding: 2px 4px;
+}
+.notes-menu .copy-button:hover,
+.notes-menu .input-copy-button:hover { color: var(--text); }
+.notes-menu .delete-button:hover { color: var(--orange); }
+
+/* ===================== CONTROL CENTER ===================== */
+
+.control-center-widget {
+    padding: 0 4px;
+}
+.control-center-widget .label,
+.control-center-widget .icon {
+    font-size: 15px;
+    color: var(--subtext);
+}
+.control-center-widget .label:hover,
+.control-center-widget .icon:hover { color: var(--text); }
+.control-center-menu {
+    background-color: var(--mantle);
+    min-width: 320px;
+    padding: 6px 0;
+}
+.control-center-menu .section {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 6px 12px;
+    padding: 10px;
+}
+.control-center-menu .section.quick-actions .button {
+    background-color: var(--mantle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 3px;
+    padding: 8px 4px;
+}
+.control-center-menu .section.quick-actions .button:hover { background-color: var(--surface-hover); }
+.control-center-menu .section.quick-actions .button .icon  { color: var(--subtext); font-size: 16px; }
+.control-center-menu .section.quick-actions .button .title { color: var(--text); font-size: 11px; }
+.control-center-menu .section.quick-actions .button.active { border: 1px solid var(--orange); }
+.control-center-menu .section.quick-actions .button.active .icon { color: var(--orange); }
+.control-center-menu .section.quick-actions .button.disabled .icon,
+.control-center-menu .section.quick-actions .button.disabled .title { color: var(--border); }
+.control-center-menu .section.sliders .slider { padding: 4px 0; }
+.control-center-menu .section.sliders .slider .icon  { color: var(--subtext); font-size: 14px; padding: 0 6px 0 0; }
+.control-center-menu .section.sliders .slider .value { color: var(--text); font-size: 11px; min-width: 32px; }
+.control-center-menu .section.sliders .slider .source-selector {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+}
+.control-center-menu .section.sliders .slider .source-selector:hover { color: var(--text); }
+.control-center-menu .section.sliders .slider .slider-control::groove {
+    background: var(--border);
+    height: 4px;
+    border-radius: 2px;
+}
+.control-center-menu .section.sliders .slider .slider-control::sub-page {
+    background: var(--orange);
+    border-radius: 2px;
+}
+.control-center-menu .section.sliders .slider .slider-control::handle {
+    background: var(--text);
+    width: 12px;
+    height: 12px;
+    margin: -4px 0;
+    border-radius: 6px;
+}
+.control-center-menu .section.media .title   { color: var(--text); font-size: 12px; }
+.control-center-menu .section.media .subtext { color: var(--subtext); font-size: 11px; }
+.control-center-menu .section.media .button {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+    font-size: 14px;
+    padding: 2px 6px;
+}
+.control-center-menu .section.media .button:hover { color: var(--text); }
+.control-center-menu .section.media .button.disabled { color: var(--border); }
+.control-center-menu .section.power .plan-name,
+.control-center-menu .section.power .mode-name {
+    background-color: var(--mantle);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 3px;
+    padding: 6px 8px;
+}
+.control-center-menu .section.power .plan-name:hover,
+.control-center-menu .section.power .mode-name:hover { background-color: var(--surface-hover); }
+.control-center-menu .section.power .title   { color: var(--text); font-size: 11px; }
+.control-center-menu .section.power .subtext { color: var(--subtext); font-size: 10px; }
+.control-center-menu .section.power .icon    { color: var(--orange); }
+.control-center-menu .context-menu {
+    background-color: var(--mantle);
+    border: 1px solid var(--border);
+    padding: 4px;
+}
+.control-center-menu .context-menu::item { color: var(--text); padding: 6px 12px; border-radius: 4px; }
+.control-center-menu .context-menu::item:selected { background-color: var(--surface); }
+.control-center-menu .context-menu::separator { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ===================== AI USAGE (Claude, Codex) =====================
+   Bar: an orange icon that opens the detailed popup (plus the Claude API status
+   dot), then a hover label with a usage gauge, percentage and reset countdown. */
+.claude-usage,
+.codex-usage {
+    padding: 0 0 0 6px;
+}
+.claude-usage .glyph,
+.codex-usage .glyph {
+    color: var(--orange);
+    font-size: 14px;
+    padding: 0 2px;
+}
+.claude-usage .glyph:hover,
+.codex-usage .glyph:hover {
+    color: var(--text);
+}
+.claude-usage .status          { font-size: 8px; padding: 0 0 0 1px; }
+.claude-usage .status.none     { color: var(--green); }
+.claude-usage .status.minor    { color: var(--amber); }
+.claude-usage .status.major    { color: var(--orange); }
+.claude-usage .status.critical { color: #ff5a4a; }
+.claude-usage .stale,
+.codex-usage .stale            { color: var(--amber); padding: 0 0 0 2px; }
+
+.ai-usage .label {
+    color: var(--text);
+    font-size: 12px;
+    padding: 0 8px 0 2px;
+}
+.ai-usage .label:hover {
+    color: var(--orange);
+}
+
+/* ---- popups: Off-White x Space Grey, one orange accent ---------------------- */
+.claude-usage-menu,
+.codex-usage-menu {
+    background-color: var(--mantle);
+    min-width: 340px;
+}
+.claude-usage-menu .header,
+.codex-usage-menu .header {
+    padding: 10px 14px 4px 14px;
+}
+.claude-usage-menu .header .text,
+.codex-usage-menu .header .text {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+.claude-usage-menu .header .refresh,
+.claude-usage-menu .header .pin-btn,
+.codex-usage-menu .header .refresh {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+    padding: 2px 4px;
+}
+.claude-usage-menu .header .refresh:hover,
+.claude-usage-menu .header .pin-btn:hover,
+.codex-usage-menu .header .refresh:hover  { color: var(--text); }
+.claude-usage-menu .header .pin-btn.pinned { color: var(--orange); }
+.codex-usage-menu .header .refresh-status          { color: var(--subtext); font-size: 11px; }
+.codex-usage-menu .header .refresh-status.busy     { color: var(--amber); }
+.codex-usage-menu .header .refresh-status.success  { color: var(--green); }
+.codex-usage-menu .header .refresh-status.error    { color: var(--orange); }
+
+.claude-usage-menu .status-row                  { padding: 0 14px 6px 14px; }
+.claude-usage-menu .status-row .status-text     { color: var(--subtext); font-size: 11px; }
+.claude-usage-menu .status-row .dot             { font-size: 9px; padding: 0 4px 0 0; }
+.claude-usage-menu .status-row .dot.none        { color: var(--green); }
+.claude-usage-menu .status-row .dot.minor       { color: var(--amber); }
+.claude-usage-menu .status-row .dot.major       { color: var(--orange); }
+.claude-usage-menu .status-row .dot.critical    { color: #ff5a4a; }
+
+.claude-usage-menu .section,
+.codex-usage-menu .section {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 6px 12px;
+    padding: 10px 12px;
+}
+.claude-usage-menu .section .title,
+.codex-usage-menu .section .title,
+.codex-usage-menu .section-title,
+.codex-usage-menu .activity-title {
+    color: var(--subtext);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+}
+
+/* progress bars: green, then amber, then orange as the window fills */
+.claude-usage-menu .section .progress,
+.codex-usage-menu .section .progress,
+.codex-usage-menu .model-bar {
+    background-color: var(--border);
+    border-radius: 3px;
+    min-height: 6px;
+    max-height: 6px;
+}
+.claude-usage-menu .section .progress .fill,
+.codex-usage-menu .section .progress .fill,
+.codex-usage-menu .model-bar .fill                   { background-color: var(--green); border-radius: 3px; }
+.claude-usage-menu .section .progress.medium .fill,
+.codex-usage-menu .section .progress.low .fill       { background-color: var(--amber); }
+.claude-usage-menu .section .progress.high .fill,
+.codex-usage-menu .section .progress.critical .fill  { background-color: var(--orange); }
+
+.claude-usage-menu .section .footer .percent         { color: var(--text); font-weight: 600; }
+.claude-usage-menu .section .footer .percent.medium  { color: var(--amber); }
+.claude-usage-menu .section .footer .percent.high    { color: var(--orange); }
+.codex-usage-menu .section .used                     { color: var(--text); font-weight: 600; }
+.codex-usage-menu .section .remaining.good           { color: var(--green); }
+.codex-usage-menu .section .remaining.low            { color: var(--amber); }
+.codex-usage-menu .section .remaining.critical       { color: var(--orange); }
+.claude-usage-menu .section .footer .reset,
+.claude-usage-menu .section .date,
+.codex-usage-menu .section .timing,
+.codex-usage-menu .section .reset,
+.codex-usage-menu .section .date,
+.codex-usage-menu .history-note,
+.codex-usage-menu .period-name                       { color: var(--subtext); font-size: 11px; }
+
+/* token history (Claude) */
+.claude-usage-menu .section .period-btn {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--subtext);
+    font-size: 11px;
+    padding: 2px 8px;
+}
+.claude-usage-menu .section .period-btn:hover  { color: var(--text); }
+.claude-usage-menu .section .period-btn.active { background-color: var(--orange); color: var(--base); }
+.claude-usage-menu .section .token-total       { color: var(--text); font-size: 18px; font-weight: 700; }
+.claude-usage-menu .section.tokens .model-name,
+.codex-usage-menu .model-name                  { color: var(--subtext); font-size: 11px; }
+.claude-usage-menu .section.tokens .model-total,
+.codex-usage-menu .model-value,
+.codex-usage-menu .period-value                { color: var(--text); font-size: 11px; }
+.claude-usage-menu .section.tokens .model-rows .progress.model-0 .fill { background-color: var(--orange); }
+.claude-usage-menu .section.tokens .model-rows .progress.model-1 .fill { background-color: var(--amber); }
+.claude-usage-menu .section.tokens .model-rows .progress.model-2 .fill { background-color: var(--green); }
+.claude-usage-menu .section.tokens .model-rows .progress.model-3 .fill { background-color: var(--subtext); }
+.claude-usage-menu .section.tokens .model-rows .progress.model-4 .fill { background-color: #5a5a5e; }
+
+/* activity heatmap (Codex): space grey rising to orange */
+.codex-usage-menu .heatmap .weekday          { color: var(--subtext); font-size: 10px; }
+.codex-usage-menu .heatmap .cell             { background-color: var(--border); border-radius: 2px; }
+.codex-usage-menu .heatmap .cell.level-1     { background-color: rgba(252, 61, 33, 0.25); }
+.codex-usage-menu .heatmap .cell.level-2     { background-color: rgba(252, 61, 33, 0.45); }
+.codex-usage-menu .heatmap .cell.level-3     { background-color: rgba(252, 61, 33, 0.70); }
+.codex-usage-menu .heatmap .cell.level-4     { background-color: var(--orange); }
+.codex-usage-menu .heatmap .cell.unavailable { background-color: transparent; }
+.codex-usage-menu .month-label               { color: var(--text); font-size: 11px; }
+.codex-usage-menu .month-nav,
+.codex-usage-menu .page-button {
+    background-color: transparent;
+    border: none;
+    color: var(--subtext);
+}
+.codex-usage-menu .month-nav:hover,
+.codex-usage-menu .page-button:hover         { color: var(--text); }
+.codex-usage-menu .page-button:disabled      { color: var(--border); }
+.codex-usage-menu .page-indicator            { color: var(--subtext); font-size: 11px; }
+.codex-usage-menu .details .name             { color: var(--subtext); font-size: 11px; }
+.codex-usage-menu .details .value            { color: var(--text); font-size: 11px; }
+.codex-usage-menu .details .status.live      { color: var(--green); }
+.codex-usage-menu .details .status.stale     { color: var(--amber); }
+.codex-usage-menu .details .error            { color: var(--orange); }
+
+/* paged cards (overview / models / activity / resets) and the details block:
+   same card as the usage sections so the popup reads as one stack */
+.codex-usage-menu .pager,
+.codex-usage-menu .details {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 6px 12px;
+    padding: 8px 12px;
+}
+.codex-usage-menu .details                   { margin-bottom: 12px; }
+.codex-usage-menu .page-nav                  { padding: 0 0 6px 0; }
+.codex-usage-menu .page                      { padding: 2px 0; }
+.codex-usage-menu .periods                   { padding: 6px 0 2px 0; }
+.codex-usage-menu .period-name               { font-size: 10px; letter-spacing: 1px; }
+.codex-usage-menu .period-value              { font-size: 13px; font-weight: 700; }
+.codex-usage-menu .model-row                 { padding: 2px 0; }
+.codex-usage-menu .empty-state               { color: var(--subtext); font-size: 11px; padding: 6px 0; }
+.codex-usage-menu .reset-credits-count       { color: var(--subtext); font-size: 11px; }
+.codex-usage-menu .reset-credit-card {
+    background-color: var(--mantle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 4px 0;
+    padding: 6px 8px;
+}
+.codex-usage-menu .reset-credit-title        { color: var(--text); font-size: 11px; }
+.codex-usage-menu .reset-credit-expiration   { color: var(--subtext); font-size: 10px; }
+
+/* ===================== TOOLTIPS =====================
+   All bar tooltips, in the house palette. Monospace so the multi-line AI usage
+   hovers line up in columns. */
+.tooltip {
+    background-color: var(--mantle);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: "JetBrainsMono NF";
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 12px;
+    margin-top: 4px;
+}
+/* details sits inside the overview page when both are on: no card-in-card */
+.codex-usage-menu .page .details {
+    background-color: transparent;
+    border: none;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    margin: 8px 0 0 0;
+    padding: 6px 0 0 0;
 }

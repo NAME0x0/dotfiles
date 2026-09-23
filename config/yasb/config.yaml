@@ -11,12 +11,13 @@ bars:
     enabled: true
     screens: ["*"]
     class_name: "yasb-bar"
+    style: "adaptive"
     alignment:
       position: "top"
-      center: false
+    # Off: the adaptive islands are solid, so blur only ever showed in the gaps
+    # between them (and in any strip the window extends below the bar).
     blur_effect:
-      enabled: true
-      acrylic: false
+      enabled: false
       dark_mode: true
       round_corners: false
       border_color: None
@@ -35,17 +36,26 @@ bars:
       left: [
         "home",
         "komorebi_workspaces",
+        "komorebi_layout",
         "apps",
         "shortcuts",
+        "window_switcher",
         "media"
       ]
       center: [
         "island_app",
+        "island_visualizer",
       ]
       right: [
+        "notes",
+        "claude_usage",
+        "claude_hover",
+        "codex_usage",
+        "codex_hover",
         "wifi",
         "volume",
         "battery",
+        "control_center",
         "power_menu"
       ]
 widgets:
@@ -64,14 +74,9 @@ widgets:
       round_corners: true
       round_corners_type: "normal"
       border_color: "#2a2a2c"
-      distance: 6
-      container_padding:
-        top: 0
-        left: 0
-        bottom: 0
-        right: 0
       alignment: "left"
       direction: "down"
+      offset_top: 6          # was `distance: 6`, removed by migrate-config
       menu_labels:
         shutdown: "Shutdown"
         restart: "Restart"
@@ -92,7 +97,59 @@ widgets:
       label_zero_index: false
       hide_empty_workspaces: false
       hide_if_offline: true
-      animation: true
+  komorebi_layout:
+    type: "komorebi.active_layout.ActiveLayoutWidget"
+    options:
+      hide_if_offline: true
+      label: "{icon}"
+      layouts: ["scrolling", "bsp", "columns", "rows", "grid", "vertical_stack", "horizontal_stack"]
+      layout_icons:
+        bsp: "\uebeb"
+        columns: "\uebf7"
+        rows: "\uec01"
+        grid: "\udb81\udf58"
+        scrolling: "\uf07e"
+        vertical_stack: "\uebee"
+        horizontal_stack: "\uebf0"
+        ultrawide_vertical_stack: "\uebee"
+        right_main_vertical_stack: "\uebf1"
+        monocle: "\uf06f"
+        maximized: "\uf06f"
+        floating: "\uf2d2"
+        paused: "\udb83\udf89"
+        tiling: "\udb81\ude40"
+      callbacks:
+        on_left: "toggle_layout_menu"   # pick a layout
+        on_middle: "toggle_monocle"     # same as the island's THEATER toggle
+        on_right: "next_layout"
+      layout_menu:
+        blur: false
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        alignment: "left"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_layout_icons: true
+  window_switcher:
+    type: "yasb.window_switcher.WindowSwitcherWidget"
+    options:
+      label: "<span>\uf2d2</span>"
+      icon_size: 48
+      max_visible_apps: 7
+      show_title: true
+      keybindings:
+        # alt+` is komorebi cycle-stack and alt+w is winfetch (whkdrc), so alt+e
+        - keys: "alt+e"
+          action: "toggle_window_switcher"
+          screen: "active"
+      popup:
+        blur: false
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        dark_mode: true
   apps:
     type: "yasb.applications.ApplicationsWidget"
     options:
@@ -103,11 +160,6 @@ widgets:
         - { icon: "\ue795", launch: "wt", name: "Terminal" }
         - { icon: "\ue62b", launch: "wt nvim", name: "Neovim" }
         - { icon: "\udb82\ude1e", launch: "code", name: "VS Code" }
-      container_padding:
-        top: 0
-        left: 0
-        bottom: 0
-        right: 0
   shortcuts:
     type: "yasb.custom.CustomWidget"
     options:
@@ -117,7 +169,7 @@ widgets:
       tooltip: true
       tooltip_label: "Keybinding Cheatsheet"
       callbacks:
-        on_left: "exec powershell -WindowStyle Hidden -NoProfile -ExecutionPolicy Bypass -File \"__USERPROFILE__\\.config\\yasb\\shortcuts_popup.ps1\""
+        on_left: "exec __USERPROFILE__\\.config\\yasb\\island_toggle.exe --shortcuts"
         on_middle: "do_nothing"
         on_right: "do_nothing"
   media:
@@ -163,11 +215,30 @@ widgets:
         pause: "\ue769"
         prev_track: "\ue892"
         next_track: "\ue893"
-      label_shadow:
-        enabled: true
-        color: "black"
-        radius: 3
-        offset: [ 1, 1 ]
+  # Lives in the center island beside island_app. hide_idle collapses it when no
+  # audio is playing, so the island itself widens while something plays and
+  # shrinks back after - native WASAPI loopback, nothing polled.
+  island_visualizer:
+    type: "yasb.audio_visualizer.AudioVisualizerWidget"
+    options:
+      class_name: "island-visualizer"
+      style: bars
+      height: 14
+      smoothness: 70
+      sensitivity: 50
+      auto_gain: true
+      framerate: 60
+      freq_min: 50
+      freq_max: 12000
+      hide_idle: true
+      hide_idle_after: 1500
+      channels: mono
+      mono_option: average
+      mirror: true
+      bars:
+        count: 12
+        width: 2
+        gap: 3
   island_app:
     type: "yasb.custom.CustomWidget"
     options:
@@ -175,14 +246,141 @@ widgets:
       label_alt: "{data}"
       class_name: "island-widget"
       exec_options:
-        run_cmd: "powershell -NoProfile -ExecutionPolicy Bypass -File __USERPROFILE__\\.config\\yasb\\island_app.ps1"
-        run_interval: 5000
+        # Prints the label the resident island_popup.ps1 keeps current. ~60 ms of CPU
+        # per poll, versus ~750 ms for the old cmd -> powershell island_app.ps1 run.
+        # use_shell off: no cmd.exe in between.
+        run_cmd: "__USERPROFILE__\\.config\\yasb\\island_toggle.exe --label"
+        run_interval: 2000
         return_format: "string"
         hide_empty: false
+        use_shell: false
       callbacks:
         on_left: "exec __USERPROFILE__\\.config\\yasb\\island_toggle.exe"
         on_middle: "do_nothing"
         on_right: "do_nothing"
+  # ---- AI usage: Claude Code and Codex -------------------------------------------
+  # Each is two widgets that read as one. The native widget is the icon (plus
+  # Claude's API status dot): it fetches the data and click opens its detailed
+  # popup. Its built-in tooltip is a fixed one-liner, so it is switched off and the
+  # custom label beside it carries the hover instead - a usage gauge, percentage
+  # and reset countdown on the bar, and a full breakdown on hover. The resident
+  # island_popup.ps1 formats that from the native widgets' own caches every 30 s.
+
+  # Claude Code subscription usage. Uses the login Claude Code already has
+  # (~/.claude/.credentials.json) - no API key.
+  claude_usage:
+    type: "yasb.claude_usage.ClaudeUsageWidget"
+    options:
+      label: "<span class='glyph'>\U000F0AE2</span><span class='status'>{status}</span><span class='stale'>{stale}</span>"
+      label_alt: "<span class='glyph'>\U000F0AE2</span><span class='status'>{status}</span><span class='stale'>{stale}</span>"
+      tooltip: false            # the hover lives on claude_hover
+      update_interval: 60
+      cache_ttl: 120            # the usage endpoint is rate-limited; keep this sane
+      five_hour_reset_format: "relative"
+      seven_day_reset_format: "absolute"
+      reset_show_date: true
+      status:                   # public status.claude.com - no auth
+        enabled: true
+        show_in_menu: true
+        icon: "\u25CF"
+        poll_interval: 300
+      token_history:            # token counts from local Claude Code transcripts - never message content
+        enabled: true
+        default_period: "today"
+        show_graph: true
+        show_graph_grid: false
+        show_models: true
+        week_starts_on: "monday"
+        count_cache_read: true
+        scan_interval: 120
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "refresh"
+        on_right: "do_nothing"
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+  claude_hover:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "{data[label]}"
+      label_alt: "{data[label_alt]}"      # right-click: 7-day window
+      label_placeholder: '"CLAUDE" ..'
+      class_name: "ai-usage claude"
+      tooltip: true
+      tooltip_label: "{data[tooltip]}"
+      exec_options:
+        run_cmd: "__USERPROFILE__\\.config\\yasb\\island_toggle.exe --print claude"
+        run_interval: 30000
+        return_format: "json"
+        hide_empty: false
+        use_shell: false
+      callbacks:
+        on_left: "toggle_label"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+
+  # Codex rate limits, through Codex's own app-server and login.
+  codex_usage:
+    type: "yasb.codex_usage.CodexUsageWidget"
+    options:
+      label: "<span class='glyph'>\U000F0169</span><span class='stale'>{stale}</span>"
+      label_alt: "<span class='glyph'>\U000F0169</span><span class='stale'>{stale}</span>"
+      tooltip: false            # the hover lives on codex_hover
+      # Full path to npm's shim: a bare "codex" can't be launched without a shell,
+      # and the native binary's path inside node_modules can move on update.
+      codex_path: "__USERPROFILE__\\AppData\\Roaming\\npm\\codex.cmd"
+      update_interval: 60
+      cache_ttl: 120
+      timeout: 15
+      show_token_usage: true
+      progress_bar:
+        enabled: false
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "refresh"
+        on_right: "do_nothing"
+      menu:
+        blur: true
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_overview: true
+        show_models: true
+        show_activity: true
+        show_resets: true
+        show_details: true
+        previous_page_icon: "\uf053"
+        next_page_icon: "\uf054"
+  codex_hover:
+    type: "yasb.custom.CustomWidget"
+    options:
+      label: "{data[label]}"
+      label_alt: "{data[label_alt]}"      # right-click: weekly window
+      label_placeholder: '"CODEX" ..'
+      class_name: "ai-usage codex"
+      tooltip: true
+      tooltip_label: "{data[tooltip]}"
+      exec_options:
+        run_cmd: "__USERPROFILE__\\.config\\yasb\\island_toggle.exe --print codex"
+        run_interval: 30000
+        return_format: "json"
+        hide_empty: false
+        use_shell: false
+      callbacks:
+        on_left: "toggle_label"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
   battery:
     type: "yasb.battery.BatteryWidget"
     options:
@@ -212,14 +410,90 @@ widgets:
     options:
       label: "<span>{icon}</span> \"VOL\" {level}"
       label_alt: "\"VOL\" {volume}"
-      volume_icons:
-        - "\udb81\udf5f "
-        - "\uf026 "
-        - "\uf026 "
-        - "\uf027 "
-        - "\uf028 "
+      # Dictionary form (was volume_icons, a list in the same order: muted, then
+      # rising levels). The migrator renamed the key but left it a list.
+      icons:
+        "muted": "\udb81\udf5f "
+        "10": "\uf026 "
+        "30": "\uf026 "
+        "60": "\uf027 "
+        "100": "\uf028 "
       callbacks:
         on_right: "exec cmd.exe /c start ms-settings:sound"
+  notes:
+    type: "yasb.notes.NotesWidget"
+    options:
+      label: "<span>\udb82\udd0c</span> {count}"
+      label_alt: "{count} notes"
+      # Outside ~/.config/yasb on purpose: notes stay out of the dotfiles repo
+      # and out of OneDrive-synced folders.
+      data_path: "__USERPROFILE__/AppData/Local/YASB/notes.json"
+      enter_to_add_note: true
+      paste_plain_text: true
+      menu:
+        blur: false
+        round_corners: true
+        round_corners_type: "normal"
+        border_color: "#2a2a2c"
+        alignment: "right"
+        direction: "down"
+        offset_top: 6
+        offset_left: 0
+        show_date_time: true
+      icons:
+        note: "\udb82\udd0c"
+        delete: "\uf1f8"
+        copy: "\uf0c5"
+        float_on: "\uf2d2"
+        float_off: "\uf2d0"
+        close: "\uf00d"
+      callbacks:
+        on_left: "toggle_menu"
+        on_middle: "do_nothing"
+        on_right: "toggle_label"
+  control_center:
+    type: "yasb.control_center.ControlCenterWidget"
+    options:
+      label: "<span>\uf1de</span>"
+      tooltip: true
+      sections_order: ["quick_actions", "sliders", "media", "power"]
+      popup:
+        blur: false
+        alignment: "right"
+        direction: "down"
+        border_color: "#2a2a2c"
+        round_corners: true
+        round_corners_type: normal
+        offset_top: 6
+      sections:
+        quick_actions:
+          show: true
+          columns: 3
+          label_position: "default"
+          actions:
+            - { id: "cycle_dnd",       label: "DND",        icon: "\uf1f6" }
+            - { id: "toggle_mute",     label: "Mute",       icon: "\ueee8" }
+            - { id: "toggle_mic_mute", label: "Mic",        icon: "\uf131" }
+            - { id: "screenshot",      label: "Snip",       icon: "\uf030" }
+            - { id: "toggle_theme",    label: "Theme",      icon: "\uf186" }
+            - { id: "settings", label: "Settings", icon: "\uf013", command: "ms-settings:" }
+        sliders:
+          show: true
+          brightness: { show_slider: true, icon: "\uf185", show_source_selector: false, source_selector_icon: "\uf078" }
+          volume:     { show_slider: true, icon: "\uf028", show_source_selector: true, source_selector_icon: "\uf078" }
+          microphone: { show_slider: true, icon: "\uf130", show_source_selector: true, source_selector_icon: "\uf078" }
+        media:
+          show: true
+          thumbnail_size: 36
+          thumbnail_radius: 4
+          icons: { prev_track: "\uf048", next_track: "\uf051", play: "\uf04b", pause: "\uf04c" }
+        power:
+          show: true
+          power_plan_title: "Power Plan"
+          power_mode_title: "Power Mode"
+          button_menu_icon: "\uf078"
+      callbacks:
+        on_left: "toggle_menu"
   power_menu:
     type: "yasb.power_menu.PowerMenuWidget"
     options:

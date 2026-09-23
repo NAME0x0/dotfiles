@@ -47,9 +47,12 @@ BLOCK_PATHS := [
 ]
 
 ; Extra executables to ignore regardless of where they live.
+; RobloxPlayerBeta.exe: Roblox installs per-user under AppData\Local\Roblox,
+; which none of the path rules above catch.
 BLOCK_EXES := [
     "Trackmania.exe",
-    "TmForever.exe"
+    "TmForever.exe",
+    "RobloxPlayerBeta.exe"
 ]
 
 ; Checked FIRST — these stay active even if a rule above would block them.
@@ -94,6 +97,16 @@ g_enabled   := true
 g_heldKey   := ""       ; accent key currently physically down
 g_armed     := false    ; a conversion is still pending for g_heldKey
 g_startHwnd := 0        ; window that was active when the key went down
+
+; Alt+Wheel focus scrolling, switched from the island panel's SCROLL FOCUS button.
+; Only the four wheel hotkeys follow it; German accents are unaffected.
+g_scroll := ReadScrollSetting()
+
+; The panel sends this message: wParam 0 = off, 1 = on, 2 = just report. The
+; reply is 100 + the resulting state, so the panel knows it landed and can show
+; the real state instead of a remembered one. Must be registered here, in the
+; auto-execute section - it ends at the first :: hotkey below.
+OnMessage(0x8051, OnScrollToggle)
 
 ; ----------------------------- HOTKEY REGISTRATION --------------------------
 ; Registered with Hotkey() rather than as :: labels so all of it runs during
@@ -288,6 +301,8 @@ HideToast() {
 ; Windows are tiled as equal-width columns; scrolling shifts focus through
 ; them like a horizontal carousel.
 
+#HotIf ScrollActive()
+
 ; Alt + Scroll Down → Focus right (next window)
 !WheelDown:: {
     Run 'komorebic.exe focus right', , 'Hide'
@@ -307,6 +322,8 @@ HideToast() {
 !+WheelUp:: {
     Run 'komorebic.exe move left', , 'Hide'
 }
+
+#HotIf
 
 ; ─── Accent control ───
 
@@ -331,3 +348,27 @@ HideToast() {
 }
 
 ^!+q::ExitApp
+
+; ----------------------------- SCROLL TOGGLE ---------------------------------
+
+ScrollActive(*) {
+    global g_scroll
+    return g_scroll
+}
+
+OnScrollToggle(wParam, lParam, msg, hwnd) {
+    global g_scroll
+    if (wParam = 0 || wParam = 1)
+        g_scroll := (wParam = 1)
+    return 100 + g_scroll
+}
+
+; The panel persists the setting so it survives a restart. Defaults to on.
+ReadScrollSetting() {
+    try {
+        text := FileRead(A_Temp "\yasb_toggles.json", "UTF-8")
+        if RegExMatch(text, '"scroll"\s*:\s*false')
+            return false
+    }
+    return true
+}

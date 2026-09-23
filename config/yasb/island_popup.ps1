@@ -8,7 +8,7 @@
 
       -ShowOnStart   show immediately (used when a click finds no resident running)
 #>
-param([switch]$ShowOnStart)
+param([switch]$ShowOnStart, [switch]$ShowShortcuts)
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
@@ -22,12 +22,14 @@ $ErrorActionPreference = 'SilentlyContinue'
 $createdNew = $false
 $script:instanceMutex = New-Object System.Threading.Mutex($true, 'Local\YasbIslandResident', [ref]$createdNew)
 if (-not $createdNew) {
-    try { [void][System.Threading.EventWaitHandle]::OpenExisting('Local\YasbIslandToggle').Set() } catch {}
+    $which = if ($ShowShortcuts) { 'Local\YasbShortcutsToggle' } else { 'Local\YasbIslandToggle' }
+    try { [void][System.Threading.EventWaitHandle]::OpenExisting($which).Set() } catch {}
     exit
 }
 # Created now, before the slow startup, so a click during startup is queued
 # (auto-reset events stay signalled) rather than lost.
 $script:toggleEvent = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, 'Local\YasbIslandToggle')
+$script:sheetEvent  = New-Object System.Threading.EventWaitHandle($false, [System.Threading.EventResetMode]::AutoReset, 'Local\YasbShortcutsToggle')
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
@@ -44,36 +46,140 @@ if (-not ('IslandSignal' -as [type])) {
         [System.Reflection.Assembly]::Load('System.Xaml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089').Location
     ) -TypeDefinition @'
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows;
 
+// Windows Focus Assist ("Do Not Disturb"). Undocumented COM service; the IDs and
+// method order come from YASB's own DND widget (src/core/widgets/services/dnd/
+// dnd_api.py), where vtable slot 3 reads the profile and slot 4 writes it.
+[ComImport, Guid("6BFF4732-81EC-4FFB-AE67-B6C1BC29631F"),
+ InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+interface IQuietHoursSettings {
+    [PreserveSig] int GetUserSelectedProfile([MarshalAs(UnmanagedType.LPWStr)] out string profileId);
+    [PreserveSig] int SetUserSelectedProfile([MarshalAs(UnmanagedType.LPWStr)] string profileId);
+}
+
 public static class IslandSignal {
+    [DllImport("ole32.dll")]
+    static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint context, ref Guid iid,
+        [MarshalAs(UnmanagedType.Interface)] out IQuietHoursSettings instance);
+
+    static Guid QuietHoursClsid = new Guid("F53321FA-34F8-4B7F-B9A3-361877CB94CF");
+    static Guid QuietHoursIid   = new Guid("6BFF4732-81EC-4FFB-AE67-B6C1BC29631F");
+    const uint CLSCTX_LOCAL_SERVER = 4;
+
+    static IQuietHoursSettings QuietHours() {
+        IQuietHoursSettings s;
+        return CoCreateInstance(ref QuietHoursClsid, IntPtr.Zero, CLSCTX_LOCAL_SERVER, ref QuietHoursIid, out s) == 0 ? s : null;
+    }
+
+    // "disabled", "priority", "alarms", or "unknown" if the service is unavailable.
+    public static string DndGet() {
+        var s = QuietHours();
+        if (s == null) return "unknown";
+        try {
+            string profile;
+            if (s.GetUserSelectedProfile(out profile) != 0 || profile == null) return "unknown";
+            if (profile.EndsWith(".Unrestricted"))  return "disabled";
+            if (profile.EndsWith(".PriorityOnly"))  return "priority";
+            if (profile.EndsWith(".AlarmsOnly"))    return "alarms";
+            return "unknown";
+        } finally { Marshal.ReleaseComObject(s); }
+    }
+
+    public static bool DndSet(string mode) {
+        string profile =
+            mode == "disabled" ? "Microsoft.QuietHoursProfile.Unrestricted" :
+            mode == "priority" ? "Microsoft.QuietHoursProfile.PriorityOnly" :
+            mode == "alarms"   ? "Microsoft.QuietHoursProfile.AlarmsOnly"   : null;
+        if (profile == null) return false;
+        var s = QuietHours();
+        if (s == null) return false;
+        try { return s.SetUserSelectedProfile(profile) == 0; }
+        finally { Marshal.ReleaseComObject(s); }
+    }
+
+    // Sends a message to an AutoHotkey script's hidden main window and returns its
+    // reply, or -1 if the script isn't running or didn't answer within 300 ms.
+    delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumWindowsProc f, IntPtr l);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+    [DllImport("user32.dll")] static extern IntPtr SendMessageTimeout(IntPtr h, uint msg, IntPtr w, IntPtr l,
+        uint flags, uint timeoutMs, out IntPtr result);
+
+    public static int SendToScript(string scriptName, uint msg, int wParam) {
+        IntPtr target = IntPtr.Zero;
+        EnumWindows(delegate(IntPtr h, IntPtr l) {
+            var cls = new StringBuilder(64); GetClassName(h, cls, 64);
+            if (cls.ToString() != "AutoHotkey") return true;
+            var title = new StringBuilder(512); GetWindowText(h, title, 512);
+            if (title.ToString().IndexOf(scriptName, StringComparison.OrdinalIgnoreCase) < 0) return true;
+            target = h; return false;
+        }, IntPtr.Zero);
+        if (target == IntPtr.Zero) return -1;
+        IntPtr reply;
+        const uint SMTO_ABORTIFHUNG = 0x0002;
+        if (SendMessageTimeout(target, msg, (IntPtr)wParam, IntPtr.Zero, SMTO_ABORTIFHUNG, 300, out reply) == IntPtr.Zero) return -1;
+        return (int)reply;
+    }
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern int GetWindowThreadProcessId(IntPtr hWnd, out int pid);
 
+    [StructLayout(LayoutKind.Sequential)]
+    struct SYSTEM_POWER_STATUS {
+        public byte ACLineStatus, BatteryFlag, BatteryLifePercent, SystemStatusFlag;
+        public int BatteryLifeTime, BatteryFullLifeTime;
+    }
+    [DllImport("kernel32.dll")] static extern bool GetSystemPowerStatus(out SYSTEM_POWER_STATUS status);
+
+    public static int ForegroundPid() {
+        int pid;
+        GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        return pid;
+    }
+
+    // Under 20% and not on AC - the rule island_app.ps1 applied through WMI's
+    // Win32_Battery, which took 200-450 ms per call; this is a single syscall.
+    public static bool BatteryLow() {
+        SYSTEM_POWER_STATUS s;
+        if (!GetSystemPowerStatus(out s)) return false;
+        if (s.BatteryFlag == 128 || s.BatteryLifePercent == 255) return false;   // no battery / unknown
+        return s.BatteryLifePercent < 20 && s.ACLineStatus != 1;
+    }
+
     // Set from PowerShell whenever the window hides.
-    public static DateTime LastHidden = DateTime.MinValue;
+    // Recorded per window (island panel, shortcuts sheet) on every hide.
+    static readonly Dictionary<Window, DateTime> lastHidden = new Dictionary<Window, DateTime>();
     // The app that had focus when the island was clicked - what "active task" reports.
     public static int PreviousForeground;
 
-    static EventWaitHandle toggle;
-    static RegisteredWaitHandle registration;   // held so it isn't collected
+    // Held so they aren't collected: one event + wait registration per window.
+    static readonly List<object> keepAlive = new List<object>();
 
     public static void Listen(string eventName, Window window) {
-        toggle = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
-        registration = ThreadPool.RegisterWaitForSingleObject(toggle, delegate {
+        var signal = new EventWaitHandle(false, EventResetMode.AutoReset, eventName);
+        var registration = ThreadPool.RegisterWaitForSingleObject(signal, delegate {
             window.Dispatcher.BeginInvoke(new Action(delegate { Toggle(window); }));
         }, null, -1, false);
+        keepAlive.Add(signal); keepAlive.Add(registration);
+        window.IsVisibleChanged += delegate {
+            if (!window.IsVisible) lastHidden[window] = DateTime.UtcNow;
+        };
     }
 
     public static void Toggle(Window window) {
         if (window.IsVisible) { window.Hide(); return; }
 
-        // Clicking the island while the panel is open deactivates the panel first,
-        // which already hid it. The toggle that click sends means "close", so a
-        // signal arriving right after an auto-hide must not reopen it.
-        if ((DateTime.UtcNow - LastHidden).TotalMilliseconds < 400) return;
+        // Clicking the bar button while the window is open deactivates the window
+        // first, which already hid it. The toggle that click sends means "close",
+        // so a signal arriving right after an auto-hide must not reopen it.
+        DateTime hidden;
+        if (lastHidden.TryGetValue(window, out hidden) &&
+            (DateTime.UtcNow - hidden).TotalMilliseconds < 400) return;
 
         int pid;
         GetWindowThreadProcessId(GetForegroundWindow(), out pid);
@@ -220,6 +326,14 @@ public static class IslandNative {
             netLink     = $link
         }
 
+        # -- monocle on the focused workspace, for the THEATER toggle --
+        $state = (& komorebic.exe state 2>$null) -join "`n" | ConvertFrom-Json
+        if ($state) {
+            $mon = $state.monitors.elements[$state.monitors.focused]
+            $ws  = $mon.workspaces.elements[$mon.workspaces.focused]
+            $shared.monocle = ($null -ne $ws.monocle_container)
+        }
+
         # -- active task: whatever was focused, ignoring this popup itself --
         # Prefer the app captured at click time; once the panel is open it is itself
         # the foreground window, so a live lookup would only ever find this process.
@@ -292,7 +406,8 @@ function Get-Pomodoro {
             if ((Get-Date) -lt $endsAt) {
                 $active = $true
                 $remain = $endsAt - (Get-Date)
-                $label = '{0:D2}:{1:D2}' -f [int]$remain.TotalMinutes, $remain.Seconds
+                # Floor, not [int]: [int] rounds, so 24:40 left used to read "25:40".
+                $label = '{0:D2}:{1:D2}' -f [int][math]::Floor($remain.TotalMinutes), $remain.Seconds
             } else {
                 Remove-Item $pomoFile -Force -ErrorAction SilentlyContinue
             }
@@ -324,6 +439,253 @@ if (-not $weather) {
 $gatherPs = [powershell]::Create()
 $null = $gatherPs.AddScript($gatherer).AddArgument($shared).AddArgument($PSScriptRoot).AddArgument($weatherStale).AddArgument($PID)
 $null = $gatherPs.BeginInvoke()
+
+# --- bar label (formerly island_app.ps1) ----------------------------------------
+# The island's text on the YASB bar: focused-app glyph, mode, time. Always running,
+# whether or not the panel is open. It writes to a file; YASB's poll runs
+# "island_toggle.exe --label", which just prints that file. This replaces YASB
+# starting cmd.exe -> powershell.exe every 5 s: ~750 ms of CPU each time (it
+# recompiled C# and queried WMI on every run), about 15% of one core, all day.
+$labelPath = Join-Path $env:TEMP 'yasb_island_label.txt'
+
+$labeler = {
+    param($shared, $ownPid, $labelPath)
+    $ErrorActionPreference = 'SilentlyContinue'
+
+    function Get-Glyph([string]$name) {
+        switch -Wildcard ($name) {
+            'chrome'            { return [char]0xf268 }
+            'msedge'            { return [char]0xf282 }
+            'firefox'           { return [char]0xf269 }
+            'brave*'            { return [char]0xf268 }
+            'Code'              { return [char]0xe70c }
+            'devenv'            { return [char]0xe70c }
+            'cursor'            { return [char]0xe70c }
+            'WindowsTerminal'   { return [char]0xf489 }
+            'pwsh'              { return [char]0xf489 }
+            'powershell*'       { return [char]0xf489 }
+            'cmd'               { return [char]0xf489 }
+            'explorer'          { return [char]0xf07b }
+            'Spotify'           { return [char]0xf001 }
+            'Discord'           { return [char]0xf392 }
+            'WhatsApp*'         { return [char]0xf232 }
+            'Telegram*'         { return [char]0xf2c6 }
+            'Slack'             { return [char]0xf198 }
+            'Notion*'           { return [char]0xe718 }
+            'obsidian'          { return [char]0xe7ed }
+            'figma*'            { return [char]0xf306 }
+            'steam*'            { return [char]0xf1b6 }
+            'EpicGamesLauncher' { return [char]0xf1b6 }
+            'olk'               { return [char]0xf6ee }
+            'OUTLOOK'           { return [char]0xf6ee }
+            # U+F02D8 is outside the BMP. The old script cast it with [char], which
+            # throws, so Teams silently got no glyph at all.
+            'Teams'             { return [char]::ConvertFromUtf32(0xf02d8) }
+            'msteams'           { return [char]::ConvertFromUtf32(0xf02d8) }
+            'WINWORD'           { return [char]0xf1c2 }
+            'EXCEL'             { return [char]0xf1c3 }
+            'POWERPNT'          { return [char]0xf1c4 }
+            'AcroRd32'          { return [char]0xf1c1 }
+            'Acrobat'           { return [char]0xf1c1 }
+            'vlc'               { return [char]0xe9be }
+            'mpc-hc*'           { return [char]0xe9be }
+            'zoom'              { return [char]0xf03d }
+        }
+        return [char]0xf2db
+    }
+
+    $pomoFile   = Join-Path $env:TEMP 'yasb_pomodoro.json'
+    $mediaNames = 'Spotify', 'vlc', 'AIMP', 'foobar2000'
+    $utf8       = New-Object Text.UTF8Encoding $false     # no BOM: YASB would show it
+    $written    = $null
+    $tick       = 0
+    $batteryLow = $false
+    $mediaOn    = $false
+
+    # ---- AI usage (Claude, Codex) for the bar's hover labels ---------------------
+    # YASB's usage widgets have fixed one-line tooltips, so the bar pairs each one
+    # with a custom label whose hover text is written here. It formats what those
+    # widgets already fetched (their caches in %LOCALAPPDATA%\YASB), so nothing here
+    # reads credentials. Runs every 30 s; Claude's public status page every 5 min.
+    # Non-ASCII goes in as character codes: this file has no BOM, and Windows
+    # PowerShell would read a literal middle dot as ANSI mojibake.
+    $yasbCache  = Join-Path $env:LOCALAPPDATA 'YASB'
+    $aiStatus   = $null
+    $aiStatusAt = [datetime]::MinValue
+    $dot        = [string][char]0x00B7
+
+    function Format-Left([datetime]$when) {
+        $d = $when - (Get-Date)
+        if ($d.TotalMinutes -lt 1) { return 'now' }
+        if ($d.TotalHours -lt 1)   { return '{0}m' -f $d.Minutes }
+        if ($d.TotalHours -lt 24)  { return '{0}h {1:D2}m' -f [int][math]::Floor($d.TotalHours), $d.Minutes }
+        return $when.ToString('ddd HH:mm')
+    }
+    function Format-Tokens($n) {
+        $n = [double]$n
+        if ($n -ge 1e9) { return '{0:0.0}B' -f ($n / 1e9) }
+        if ($n -ge 1e6) { return '{0:0.0}M' -f ($n / 1e6) }
+        if ($n -ge 1e3) { return '{0:0.0}K' -f ($n / 1e3) }
+        return '{0:0}' -f $n
+    }
+    # A pie that fills in eighths with usage (Nerd Font circle-slice glyphs).
+    function Get-Pie($pct) {
+        $pct = [double]$pct
+        if ($pct -le 0) { return [char]::ConvertFromUtf32(0xF0766) }
+        $i = [int][math]::Min(8, [math]::Max(1, [math]::Ceiling($pct / 12.5)))
+        return [char]::ConvertFromUtf32(0xF0A9E + $i - 1)
+    }
+    function Write-JsonAtomic([string]$path, $obj) {
+        $tmp = "$path.tmp"
+        [IO.File]::WriteAllText($tmp, ($obj | ConvertTo-Json -Compress), $utf8)
+        if (Test-Path $path) { [IO.File]::Replace($tmp, $path, [NullString]::Value) }
+        else                 { [IO.File]::Move($tmp, $path) }
+    }
+    function Update-AiStatus {
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            $r = Invoke-RestMethod 'https://status.claude.com/api/v2/status.json' -TimeoutSec 3
+            $script:aiStatus = $r.status.description
+        } catch { $script:aiStatus = $null }
+    }
+    function Update-ClaudeAi {
+        $c = [IO.File]::ReadAllText((Join-Path $yasbCache 'claude_usage_cache.json')) | ConvertFrom-Json
+        $five  = [double]$c.five
+        $seven = [double]$c.seven
+        $fiveAt  = [datetimeoffset]::Parse($c.five_reset_iso).LocalDateTime
+        $sevenAt = [datetimeoffset]::Parse($c.seven_reset_iso).LocalDateTime
+        $lines = @(
+            'CLAUDE CODE'
+            ''
+            ('5-hour   {0,3:0}% used    resets in {1}  (at {2})' -f $five, (Format-Left $fiveAt), $fiveAt.ToString('HH:mm'))
+            ('7-day    {0,3:0}% used    resets {1}' -f $seven, $sevenAt.ToString('ddd dd MMM, HH:mm'))
+        )
+        if ($aiStatus) { $lines += ''; $lines += ('API      {0}' -f $aiStatus) }
+        $lines += ('updated  {0}' -f [DateTimeOffset]::FromUnixTimeSeconds([long]$c.fetched_at).LocalDateTime.ToString('HH:mm'))
+        if ($c.token_expired) { $lines += ''; $lines += 'Login expired - run claude once to refresh it' }
+        $lines += ''
+        $lines += 'click the icon for the full breakdown'
+        Write-JsonAtomic (Join-Path $env:TEMP 'yasb_ai_claude.json') ([ordered]@{
+            label     = '{0} "CLAUDE" {1:0}% {2} {3}' -f (Get-Pie $five), $five, $dot, (Format-Left $fiveAt)
+            label_alt = '{0} "CLAUDE 7D" {1:0}% {2} {3}' -f (Get-Pie $seven), $seven, $dot, $sevenAt.ToString('ddd HH:mm')
+            tooltip   = $lines -join "`n"
+        })
+    }
+    function Update-CodexAi {
+        $c = [IO.File]::ReadAllText((Join-Path $yasbCache 'codex_usage_widget_cache.json')) | ConvertFrom-Json
+        function Get-WindowName($mins) {
+            $mins = [int]$mins
+            if ($mins -eq 300)   { return '5-hour' }
+            if ($mins -eq 10080) { return 'weekly' }
+            if ($mins -ge 1440)  { return '{0}-day' -f [int]($mins / 1440) }
+            return '{0}-hour' -f [int]($mins / 60)
+        }
+        $p = $c.primary; $s = $c.secondary
+        $pAt = [DateTimeOffset]::FromUnixTimeSeconds([long]$p.resets_at).LocalDateTime
+        $lines = @(
+            ('CODEX  {0} {1}' -f $dot, ([string]$c.plan).ToUpper())
+            ''
+            ('{0,-8} {1,3:0}% used    resets in {2}  (at {3})' -f (Get-WindowName $p.duration_mins), [double]$p.used, (Format-Left $pAt), $pAt.ToString('HH:mm'))
+        )
+        if ($s) {
+            $sAt = [DateTimeOffset]::FromUnixTimeSeconds([long]$s.resets_at).LocalDateTime
+            $lines += ('{0,-8} {1,3:0}% used    resets {2}' -f (Get-WindowName $s.duration_mins), [double]$s.used, $sAt.ToString('ddd dd MMM, HH:mm'))
+        }
+        $t = $c.tokens.periods
+        if ($t) {
+            $lines += ''
+            $lines += ('tokens   today {0}   week {1}   month {2}' -f (Format-Tokens $t.today), (Format-Tokens $t.week), (Format-Tokens $t.month))
+        }
+        if ($null -ne $c.credits) { $lines += ('credits  {0}' -f $c.credits) }
+        $lines += ('updated  {0}' -f [DateTimeOffset]::FromUnixTimeSeconds([long]$c.fetched_at).LocalDateTime.ToString('HH:mm'))
+        if ($c.stale) { $lines += ''; $lines += ('showing cached data: {0}' -f $(if ($c.error) { $c.error } else { 'refresh pending' })) }
+        $lines += ''
+        $lines += 'click the icon for the full breakdown'
+        Write-JsonAtomic (Join-Path $env:TEMP 'yasb_ai_codex.json') ([ordered]@{
+            label     = '{0} "CODEX" {1:0}% {2} {3}' -f (Get-Pie $p.used), [double]$p.used, $dot, (Format-Left $pAt)
+            label_alt = $(if ($s) { '{0} "CODEX WEEK" {1:0}% {2} {3}' -f (Get-Pie $s.used), [double]$s.used, $dot, $sAt.ToString('ddd HH:mm') }
+                          else    { '{0} "CODEX" {1:0}%' -f (Get-Pie $p.used), [double]$p.used })
+            tooltip   = $lines -join "`n"
+        })
+    }
+
+    while (-not $shared.stop) {
+        try {
+            # Focused app. While the panel is open it is the focused window itself,
+            # so describe the app behind it instead.
+            $fg = [IslandSignal]::ForegroundPid()
+            if ($fg -eq $ownPid) { $fg = [IslandSignal]::PreviousForeground }
+            $name = try { [Diagnostics.Process]::GetProcessById($fg).ProcessName } catch { '' }
+            $glyph = Get-Glyph $name
+
+            # Battery and media every 5 s - the costlier checks, and slow-moving anyway.
+            if ($tick % 5 -eq 0) {
+                $batteryLow = [IslandSignal]::BatteryLow()
+                $mediaOn = $false
+                foreach ($p in [Diagnostics.Process]::GetProcesses()) {      # one enumeration, not one per name
+                    if ($mediaNames -contains $p.ProcessName -and
+                        $p.MainWindowTitle -and $p.MainWindowTitle -ne $p.ProcessName) { $mediaOn = $true; break }
+                }
+            }
+            $tick++
+
+            # AI usage hover labels: every 30 s (offset from the 5 s checks above).
+            if ($tick % 30 -eq 2) {
+                if ((Get-Date) -ge $aiStatusAt) { Update-AiStatus; $aiStatusAt = (Get-Date).AddMinutes(5) }
+                foreach ($job in 'Update-ClaudeAi', 'Update-CodexAi') {
+                    try { & $job }
+                    catch { try { [IO.File]::WriteAllText((Join-Path $env:TEMP 'yasb_ai.err'), ('{0:u}  {1}: {2}' -f (Get-Date), $job, $_.Exception.Message)) } catch {} }
+                }
+            }
+
+            $mode = 'TIME'; $time = $null
+            if (Test-Path $pomoFile) {
+                $pomo = [IO.File]::ReadAllText($pomoFile) | ConvertFrom-Json
+                $remain = [datetime]$pomo.endsAt - (Get-Date)
+                if ($remain.TotalSeconds -gt 0) {
+                    $mode = 'FOCUS'
+                    $time = '{0:D2}:{1:D2}' -f [int][math]::Floor($remain.TotalMinutes), $remain.Seconds
+                }
+            }
+            # FOCUS switched DND on for a pomodoro. Whenever that pomodoro stops being
+            # active - FOCUS off, the STOP button, or it runs out - switch DND back
+            # off. Lives here because this loop runs even while the panel is closed.
+            if ($shared.focusOwnsDnd -and $mode -ne 'FOCUS') {
+                [void][IslandSignal]::DndSet('disabled')
+                $shared.focusOwnsDnd = $false
+                [pscustomobject]@{ scroll = [bool]$shared.scroll; focusOwnsDnd = $false } |
+                    ConvertTo-Json | Set-Content (Join-Path $env:TEMP 'yasb_toggles.json') -Encoding UTF8
+            }
+
+            if ($mode -eq 'TIME' -and $batteryLow) { $mode = 'ALERT' }
+            if ($mode -eq 'TIME' -and $mediaOn)    { $mode = 'NOW' }
+            if (-not $time) { $time = (Get-Date).ToString('HH:mm') }
+
+            $label = '{0} "{1}" {2}' -f $glyph, $mode, $time
+
+            # Write only on change, atomically: the reader must never catch a half
+            # written file. A failed replace (reader holding it) retries next tick.
+            if ($label -ne $written) {
+                $tmp = "$labelPath.tmp"
+                [IO.File]::WriteAllText($tmp, $label, $utf8)
+                # [NullString]::Value, not $null: PowerShell turns $null into "" for a .NET
+                # string parameter, and Replace rejects "" as an illegal backup path.
+                if (Test-Path $labelPath) { [IO.File]::Replace($tmp, $labelPath, [NullString]::Value) }
+                else                      { [IO.File]::Move($tmp, $labelPath) }
+                $written = $label
+            }
+        } catch {
+            # One bad tick must never end the loop - a frozen label is worse. But leave
+            # a trace: a failure here used to be completely silent.
+            try { [IO.File]::WriteAllText("$labelPath.err", ('{0:u}  {1}' -f (Get-Date), $_.Exception.Message)) } catch {}
+        }
+        Start-Sleep -Milliseconds 1000
+    }
+}
+
+$labelPs = [powershell]::Create()
+$null = $labelPs.AddScript($labeler).AddArgument($shared).AddArgument($PID).AddArgument($labelPath)
+$null = $labelPs.BeginInvoke()
 
 $weekNum = [System.Globalization.CultureInfo]::InvariantCulture.Calendar.GetWeekOfYear(
     $now, [System.Globalization.CalendarWeekRule]::FirstDay, [System.DayOfWeek]::Monday)
@@ -708,6 +1070,7 @@ function Update-Clock {
 
     $pm = Get-Pomodoro
     $el.PomoTime.Text = $pm.label
+    Set-ToggleLook 'TogFocus' $pm.active   # stays right when STOP is used or the timer runs out
     if ($pm.active) {
         $el.PomoBtnText.Text = 'STOP'
         $el.PomoBtn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FC3D21')
@@ -730,6 +1093,8 @@ function Apply-System {
     # cheap: copies whatever the background gatherer last produced, and only if it's new
     if ($shared.gen -eq $script:appliedGen -or -not $shared.pulse) { return }
     $script:appliedGen = $shared.gen
+
+    Set-ToggleLook 'TogTheater' ([bool]$shared.monocle)
 
     $sp = $shared.pulse
     $el.CpuHist.Text = (Get-Histogram $sp.cpuPct)
@@ -789,27 +1154,92 @@ $el.PomoBtn.Add_MouseLeftButtonUp({
     Update-Clock
 })
 
+# --- toggles -------------------------------------------------------------------
+# These four buttons used to be decorative: they flipped a value in
+# yasb_toggles.json that nothing ever read. Each now drives the real thing, and
+# shows the real state each time the panel opens rather than a remembered one.
+#
+#   DND      Windows Focus Assist, priority only (QuietHours COM - see IslandSignal)
+#   FOCUS    a 25-minute pomodoro plus DND; DND goes back off when it ends, however
+#            it ends - FOCUS off, the pomodoro STOP button, or simply running out
+#   THEATER  komorebi monocle on the focused workspace
+#   SCROLL   Alt+Wheel focus scrolling in scroll_focus.ahk; accents unaffected
+#
+# Only two things are persisted: the scroll setting (scroll_focus.ahk reads it at
+# startup) and whether FOCUS is the one that switched DND on.
 $togFile = Join-Path $env:TEMP 'yasb_toggles.json'
-$togState = if (Test-Path $togFile) { Get-Content $togFile -Raw -Encoding UTF8 | ConvertFrom-Json } else { [pscustomobject]@{ dnd=$false; focus=$false; theater=$false; scroll=$false } }
-function Apply-Toggle($btnName, $key) {
-    $btn = $el[$btnName]
-    if ($togState.$key) {
-        $btn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#FC3D21')
-        $btn.Child.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#1c1c1e')
-    } else {
-        $btn.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#1c1c1e')
-        $btn.Child.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#c7c4bf')
-    }
-    $btn.Add_MouseLeftButtonUp({
-        $togState.$key = -not $togState.$key
-        $togState | ConvertTo-Json | Set-Content $togFile -Encoding UTF8
-        Apply-Toggle $btnName $key
-    }.GetNewClosure())
+$shared.scroll = $true
+$shared.focusOwnsDnd = $false
+if (Test-Path $togFile) {
+    try {
+        $saved = Get-Content $togFile -Raw -Encoding UTF8 | ConvertFrom-Json
+        if ($null -ne $saved.scroll)       { $shared.scroll       = [bool]$saved.scroll }
+        if ($null -ne $saved.focusOwnsDnd) { $shared.focusOwnsDnd = [bool]$saved.focusOwnsDnd }
+    } catch {}
 }
-Apply-Toggle 'TogDND' 'dnd'
-Apply-Toggle 'TogFocus' 'focus'
-Apply-Toggle 'TogTheater' 'theater'
-Apply-Toggle 'TogScroll' 'scroll'
+function Save-Toggles {
+    [pscustomobject]@{ scroll = [bool]$shared.scroll; focusOwnsDnd = [bool]$shared.focusOwnsDnd } |
+        ConvertTo-Json | Set-Content $togFile -Encoding UTF8
+}
+
+$brushConv  = [System.Windows.Media.BrushConverter]::new()
+$togOnBg    = $brushConv.ConvertFromString('#FC3D21'); $togOnFg  = $brushConv.ConvertFromString('#1c1c1e')
+$togOffBg   = $brushConv.ConvertFromString('#1c1c1e'); $togOffFg = $brushConv.ConvertFromString('#c7c4bf')
+function Set-ToggleLook([string]$name, [bool]$on) {
+    $el[$name].Background       = if ($on) { $togOnBg } else { $togOffBg }
+    $el[$name].Child.Foreground = if ($on) { $togOnFg } else { $togOffFg }
+}
+
+function Test-PomodoroActive {
+    if (-not (Test-Path $pomoFile)) { return $false }
+    try { return [datetime]((Get-Content $pomoFile -Raw | ConvertFrom-Json).endsAt) -gt (Get-Date) } catch { return $false }
+}
+
+function Update-Toggles {
+    Set-ToggleLook 'TogDND'     ([IslandSignal]::DndGet() -in 'priority', 'alarms')
+    Set-ToggleLook 'TogFocus'   (Test-PomodoroActive)
+    Set-ToggleLook 'TogTheater' ([bool]$shared.monocle)
+    # Ask the script itself; -1 means it isn't running, so scrolling is off either way.
+    $scroll = [IslandSignal]::SendToScript('scroll_focus.ahk', 0x8051, 2)
+    Set-ToggleLook 'TogScroll'  ($scroll -eq 101)
+}
+
+# One handler per button, attached once. (The old code attached another handler
+# on every click, so each click also re-fired all the earlier ones.)
+$el.TogDND.Add_MouseLeftButtonUp({
+    $on = [IslandSignal]::DndGet() -in 'priority', 'alarms'
+    [void][IslandSignal]::DndSet($(if ($on) { 'disabled' } else { 'priority' }))
+    if ($on) { $shared.focusOwnsDnd = $false; Save-Toggles }   # switched off by hand - FOCUS no longer owns it
+    Update-Toggles
+})
+
+$el.TogFocus.Add_MouseLeftButtonUp({
+    if (Test-PomodoroActive) {
+        Remove-Item $pomoFile -Force -ErrorAction SilentlyContinue
+        if ($shared.focusOwnsDnd) { [void][IslandSignal]::DndSet('disabled'); $shared.focusOwnsDnd = $false; Save-Toggles }
+    } else {
+        @{ endsAt = (Get-Date).AddMinutes(25).ToString('o') } | ConvertTo-Json | Set-Content $pomoFile -Encoding UTF8
+        # Only take ownership if DND was off - never switch off a DND you set yourself.
+        if ([IslandSignal]::DndGet() -eq 'disabled') {
+            [void][IslandSignal]::DndSet('priority'); $shared.focusOwnsDnd = $true; Save-Toggles
+        }
+    }
+    Update-Clock; Update-Toggles
+})
+
+$el.TogTheater.Add_MouseLeftButtonUp({
+    Start-Process komorebic.exe -ArgumentList 'toggle-monocle' -WindowStyle Hidden
+    $shared.monocle = -not $shared.monocle     # optimistic; the next gatherer pass reads the truth
+    $shared.wake = $true
+    Update-Toggles
+})
+
+$el.TogScroll.Add_MouseLeftButtonUp({
+    $want  = if ($shared.scroll) { 0 } else { 1 }
+    $reply = [IslandSignal]::SendToScript('scroll_focus.ahk', 0x8051, $want)
+    if ($reply -ge 100) { $shared.scroll = ($reply -eq 101); Save-Toggles }
+    Update-Toggles
+})
 
 # --- timers -----------------------------------------------------------------
 $clockTimer = New-Object System.Windows.Threading.DispatcherTimer
@@ -839,6 +1269,7 @@ $window.Add_IsVisibleChanged({
         Set-PanelPosition
         $openAnim.Begin($window, $true)                  # controllable, so hide can stop it
         Update-Clock
+        Update-Toggles                                   # real DND / scroll / focus state, every open
         Apply-System; Apply-Weather                      # last-known values, instantly
         $clockTimer.Start(); $systemTimer.Start()
         $shared.paused = $false; $shared.wake = $true    # ...and a fresh pass straight away
@@ -848,7 +1279,6 @@ $window.Add_IsVisibleChanged({
         $shared.paused = $true
         [void]$shared.resume.Reset()
         $openAnim.Stop($window)                          # drop the held Opacity=1 so the next show fades in
-        [IslandSignal]::LastHidden = [DateTime]::UtcNow
     }
 })
 
@@ -860,7 +1290,29 @@ $window.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]:
 $window.Arrange([System.Windows.Rect]::new($window.DesiredSize))
 
 [IslandSignal]::Listen('Local\YasbIslandToggle', $window)
+
+# --- keybinding cheatsheet ---------------------------------------------------
+# The bar's keyboard button. Lives here so a click only shows a window that is
+# already built, instead of starting PowerShell and WPF (~1.5 s) every time.
+$sheetPath = Join-Path $PSScriptRoot 'shortcuts.xaml'
+if (Test-Path $sheetPath) {
+    try {
+        [xml]$sheetXaml = [System.IO.File]::ReadAllText($sheetPath, [System.Text.Encoding]::UTF8)
+        $sheet = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $sheetXaml))
+        $sheet.Left = 260
+        $sheet.Top  = [System.Windows.SystemParameters]::WorkArea.Top + 8
+        $sheet.FindName('CloseBtn').Add_MouseLeftButtonDown({ $sheet.Hide() })
+        $sheet.Add_KeyDown({ if ($_.Key -eq 'Escape') { $sheet.Hide() } })
+        $sheet.Add_Deactivated({ $sheet.Hide() })
+        [void](New-Object System.Windows.Interop.WindowInteropHelper $sheet).EnsureHandle()
+        [IslandSignal]::Listen('Local\YasbShortcutsToggle', $sheet)
+    } catch {
+        [System.IO.File]::WriteAllText((Join-Path $env:TEMP 'yasb_shortcuts.err'), $_.ToString())
+    }
+}
+
 if ($ShowOnStart) { [IslandSignal]::Toggle($window) }
+if ($ShowShortcuts -and $sheet) { [IslandSignal]::Toggle($sheet) }
 
 # Resident: pump messages until the process is ended. Hiding never exits.
 [System.Windows.Threading.Dispatcher]::Run()

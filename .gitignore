@@ -32,3 +32,7 @@ temp/
 
 # Compiled at install time from config/yasb/island_toggle.cs - never committed
 island_toggle.exe
+
+# YASB Notes widget data - lives in %LOCALAPPDATA%\YASB, never in the repo
+notes.json
+**/notes.json

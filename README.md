@@ -90,9 +90,27 @@ Re-running is safe — the installer and the launcher are both idempotent.
 
 <img src="docs/assets/bar.png" width="100%" alt="The YASB status bar: workspace indicators, pinned app launchers, clock, wifi, volume, battery and power menu." />
 
-YASB, 40px, `JetBrainsMono NF`. Workspace pills on the left track komorebi live over a named pipe.
+YASB, 40px, `JetBrainsMono NF`, adaptive style. Workspace pills on the left track komorebi live over a named pipe.
 Labels sit in `"QUOTATION MARKS"` — Off-White × Space Grey × NASA Orange, one accent (`#FC3D21`)
 carried across every surface.
+
+Left to right:
+
+| Widget | What it does |
+|---|---|
+| Workspaces + layout | komorebi pills, plus the active layout: click for a layout menu, middle-click for monocle |
+| Launchers | Terminal, Neovim, VS Code |
+| Cheatsheet | komorebi / Neovim / scroll keybindings, shown instantly by the island resident |
+| Window switcher | Also on <kbd>Alt</kbd> <kbd>E</kbd>; arrows + Enter, Delete closes the window |
+| Island (center) | Clock pill that expands into a panel: weather, system graphs, now playing, active task, pomodoro, and real DND / focus / theater / scroll-focus toggles. An audio visualizer joins it while sound plays |
+| Notes | Quick scratch notes, stored in `%LOCALAPPDATA%\YASB\notes.json` (outside the repo and OneDrive) |
+| Claude / Codex usage | Orange icon opens the full breakdown; the label shows the 5-hour window and its reset, and hovering shows both windows, token totals and API status. Needs Claude Code / Codex CLI signed in |
+| Wifi, volume, battery | — |
+| Control center | DND, mute, mic, snip, theme, volume / mic / brightness sliders, power plan |
+
+The island is one resident PowerShell/WPF process (`island_popup.ps1`) that stays hidden between
+clicks; the bar talks to it through `island_toggle.exe`, a tiny launcher compiled from
+`island_toggle.cs` at install time. Opening the panel takes about 50 ms, where starting it fresh took 4 s.
 
 ---
 
@@ -109,7 +127,8 @@ fights Windows' own Win-key bindings.
 | <kbd>Alt</kbd> <kbd>+</kbd> / <kbd>-</kbd> | Resize horizontally |
 | <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>+</kbd> / <kbd>-</kbd> | Resize vertically |
 | <kbd>Alt</kbd> <kbd>B</kbd> / <kbd>N</kbd> | bsp layout / scrolling layout |
-| <kbd>Alt</kbd> + <kbd>Wheel</kbd> | Scroll focus across columns *(AutoHotkey)* |
+| <kbd>Alt</kbd> + <kbd>Wheel</kbd> | Scroll focus across columns *(AutoHotkey; toggle it from the island's SCROLL button)* |
+| <kbd>Alt</kbd> <kbd>E</kbd> | Window switcher *(YASB)* |
 | <kbd>Alt</kbd> <kbd>Shift</kbd> + <kbd>Wheel</kbd> | Move window across columns |
 | <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>U</kbd> | Toggle hold-to-type German accents (A O U S) |
 
