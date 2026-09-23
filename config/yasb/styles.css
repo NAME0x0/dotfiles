@@ -461,7 +461,7 @@
    peaks, so loud passages read hotter. */
 .audio-visualizer-widget {
     padding: 0;
-    margin: 0 8px 0 0;
+    margin: 0 8px;   /* even on both sides: one twin sits either side of the pill */
 }
 .audio-visualizer-widget .widget-container {
     padding: 0;

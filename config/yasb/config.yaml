@@ -44,6 +44,7 @@ bars:
         "media"
       ]
       center: [
+        "island_visualizer_left",
         "island_app",
         "island_visualizer",
       ]
@@ -175,16 +176,19 @@ widgets:
   media:
     type: "yasb.media.MediaWidget"
     options:
-      label: "<span>\udb80\udf87</span> \"NOW PLAYING\" {title}"
-      label_alt: "<span>\udb80\udf87</span> \"NOW PLAYING\" {title} - {artist}"
+      # Title only: the left column is fixed-width (centering guard), so a long
+      # prefix just gets squeezed. Right-click adds the artist.
+      label: "<span>\udb80\udf87</span> {title}"
+      label_alt: "<span>\udb80\udf87</span> {artist}"
       hide_empty: true
       callbacks:
         on_left: "toggle_media_menu"
         on_middle: "do_nothing"
         on_right: "toggle_label"
       max_field_size:
-        label: 28          # keeps the left group inside its fixed column
-        label_alt: 60
+        label: 16          # keeps the left group inside its fixed column
+        label_alt: 16
+        truncate_whole_label: false   # cap {title}/{artist}, not the markup around them
       show_thumbnail: false
       controls_only: false
       controls_left: false
@@ -236,7 +240,30 @@ widgets:
       mono_option: average
       mirror: true
       bars:
-        count: 12
+        count: 8
+        width: 2
+        gap: 3
+  # Mirror twin on the left of the pill: with both hiding together, the
+  # time pill stays dead center while audio plays.
+  island_visualizer_left:
+    type: "yasb.audio_visualizer.AudioVisualizerWidget"
+    options:
+      class_name: "island-visualizer"
+      style: bars
+      height: 14
+      smoothness: 70
+      sensitivity: 50
+      auto_gain: true
+      framerate: 60
+      freq_min: 50
+      freq_max: 12000
+      hide_idle: true
+      hide_idle_after: 1500
+      channels: mono
+      mono_option: average
+      mirror: true
+      bars:
+        count: 8
         width: 2
         gap: 3
   island_app:
