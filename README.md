@@ -104,7 +104,7 @@ Left to right:
 | Window switcher | Also on <kbd>Alt</kbd> <kbd>E</kbd>; arrows + Enter, Delete closes the window |
 | Island (center) | Clock pill that expands into a panel: weather, system graphs, now playing, active task, pomodoro, and real DND / focus / theater / scroll-focus toggles. An audio visualizer joins it while sound plays |
 | Notes | Quick scratch notes, stored in `%LOCALAPPDATA%\YASB\notes.json` (outside the repo and OneDrive) |
-| Claude / Codex usage | Orange icon opens the full breakdown; the label shows the 5-hour window and its reset, and hovering shows both windows, token totals and API status. Needs Claude Code / Codex CLI signed in |
+| Claude / Codex usage | Orange icon opens the full breakdown; the name label expands on click to the 5-hour window and its reset, and hovering shows both windows, token totals and API status. Needs Claude Code / Codex CLI signed in |
 | Wifi, volume, battery | — |
 | Control center | DND, mute, mic, snip, theme, volume / mic / brightness sliders, power plan |
 

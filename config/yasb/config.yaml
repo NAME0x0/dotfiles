@@ -310,7 +310,7 @@ widgets:
     type: "yasb.custom.CustomWidget"
     options:
       label: "{data[label]}"
-      label_alt: "{data[label_alt]}"      # right-click: 7-day window
+      label_alt: "{data[label_alt]}"      # click: 5-hour usage + reset
       label_placeholder: '"CLAUDE" ..'
       class_name: "ai-usage claude"
       tooltip: true
@@ -366,7 +366,7 @@ widgets:
     type: "yasb.custom.CustomWidget"
     options:
       label: "{data[label]}"
-      label_alt: "{data[label_alt]}"      # right-click: weekly window
+      label_alt: "{data[label_alt]}"      # click: 5-hour usage + reset
       label_placeholder: '"CODEX" ..'
       class_name: "ai-usage codex"
       tooltip: true

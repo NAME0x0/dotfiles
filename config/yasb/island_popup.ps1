@@ -566,8 +566,9 @@ $labeler = {
         $lines += ''
         $lines += 'click the icon for the full breakdown'
         Write-JsonAtomic (Join-Path $env:TEMP 'yasb_ai_claude.json') ([ordered]@{
-            label     = '{0} "CLAUDE" {1:0}% {2} {3}' -f (Get-Pie $five), $five, $dot, (Format-Left $fiveAt)
-            label_alt = '{0} "CLAUDE 7D" {1:0}% {2} {3}' -f (Get-Pie $seven), $seven, $dot, $sevenAt.ToString('ddd HH:mm')
+            # collapsed: name only; click expands to the 5-hour window (7-day is in the tooltip)
+            label     = '"CLAUDE"'
+            label_alt = '{0} "CLAUDE" {1:0}% {2} {3}' -f (Get-Pie $five), $five, $dot, (Format-Left $fiveAt)
             tooltip   = $lines -join "`n"
         })
     }
@@ -602,9 +603,8 @@ $labeler = {
         $lines += ''
         $lines += 'click the icon for the full breakdown'
         Write-JsonAtomic (Join-Path $env:TEMP 'yasb_ai_codex.json') ([ordered]@{
-            label     = '{0} "CODEX" {1:0}% {2} {3}' -f (Get-Pie $p.used), [double]$p.used, $dot, (Format-Left $pAt)
-            label_alt = $(if ($s) { '{0} "CODEX WEEK" {1:0}% {2} {3}' -f (Get-Pie $s.used), [double]$s.used, $dot, $sAt.ToString('ddd HH:mm') }
-                          else    { '{0} "CODEX" {1:0}%' -f (Get-Pie $p.used), [double]$p.used })
+            label     = '"CODEX"'
+            label_alt = '{0} "CODEX" {1:0}% {2} {3}' -f (Get-Pie $p.used), [double]$p.used, $dot, (Format-Left $pAt)
             tooltip   = $lines -join "`n"
         })
     }
